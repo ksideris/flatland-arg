@@ -13,6 +13,15 @@ import pygame.mouse
 import pygame.time
 import sys
 
+#Added these imports for gesture recognition
+import os
+import serial
+import pickle
+import atexit
+import time
+from copy import deepcopy
+
+
 # TODO: Can we have a keymap file?
 from pygame import (K_a as ATTACK,
                     K_s as SCAN,
@@ -38,10 +47,25 @@ class PlayerController(object):
         self.view = view
         self._actionQueue = []
         self._currentAction = None
+
         #Added these for gesture recognition
-        self._sensorQueue = []
+        self._attackRight = loadPattern("pickles/attackRightPattern.pickle")
+        self._attackLeft = loadPattern("pickles/attackLeftPattern.pickle")
+        self._scan = loadPattern("pickles/scanPattern.pickle")
+        self._build = loadPattern("pickles/buildPattern.pickle")
+        self._bestFit = {}
+        self._sample = None
         self._currentSerialData = None
- 
+        self._scepterBtnPressed = False
+        try:
+            self._ser = serial.Serial('/dev/ttyUSB0', 9600)
+            self._ser.readline()
+            self._ser.readline()
+            self._ser.flush()
+        except serial.serialutil.SerialException as detail:
+            print 'Serial error:', detail
+
+
     def go(self):
         self.previousTime = pygame.time.get_ticks()
         self._inputCall = LoopingCall(self._handleInput)
@@ -101,12 +125,15 @@ class PlayerController(object):
         time = pygame.time.get_ticks()
         self._updatePosition((time - self.previousTime) / 1000.0)
         self.previousTime = time
-        #This is where we would add a function call to update serial data
-        #This is where we would check if the scepter button is pressed
-        #If scepter button is pressed, this is where we check the accelerometer data
-        #If data has been collected number of times equal to sample data length:
-        # 1) do gesture recognition 
-        # 2) take out oldest sample and collect new one
+        #If player is pressing red button on scepter take two samples and add them to the average
+        self._serialData = readSerial()
+        if (self._serialData[3]):
+            self._sample = getSampleData(2, self._sample)
+            currentPattern = matchPattern()
+        else:
+            currentPattern = None
+            
+
         for event in pygame.event.get():
             if (event.type == pygame.QUIT) or ((event.type == pygame.KEYDOWN) and (event.key == QUIT)):
                 reactor.stop()
@@ -122,6 +149,72 @@ class PlayerController(object):
         if (not self._currentAction) and self._actionQueue:
             self._startedAction(self._actionQueue.pop())
 
+    def matchPattern(self):
+        bestFit['attackRight'] = patternDifference(self._sample, attackRight)
+        bestFit['attackLeft'] = patternDifference(self._sample, attackLeft)
+        bestFit['build'] = patternDifference(self._sample, build)
+        bestFit['scan'] = patternDifference(self._sample, scan)
+        return min(bestFit, key=bestFit.get)
+
+    def patternDifference(a,b):
+        totalDifference = float(sys.maxint)
+        for i in a.keys():
+            for j in a[i].keys():
+                totalDifference -= abs( a[i][j] - b[i][j] )
+        totalDifference = sys.maxint - totalDifference
+        return totalDifference
+
+
+    def getSampleData(sampleLength, averageSoFar=None):
+        """
+        Get some sample data in the form of a nested dictionary.m length
+        Value is the percentage of times a transition happened, transition is defined in the dictionary
+        Keys of dictionaries are tuples that represent spacial coordinates.
+        """
+        sampleData = initPattern(1)
+        lastPosition = (0,0,0)
+        areas = loadPattern("pickles/areas.pickle")
+        counter = 0
+        #here we're going to wait in a while loop for the scepter to transition through two areas before we return
+        #this is a problem because it's blocking 
+        #need to break up this function into parts 
+        while counter < sampleLength:
+            keys = ['x', 'y', 'z']
+            data = {'x': self._serialData[0], 'y': self._serialData[1], 'z': self._serialData[2]}
+            results = {}
+            for k in keys:
+                if data[k] < areas[k][0]: results[k] = 0
+                elif data[k] < areas[k][1]: results[k] = 1
+                else: results[k] = 2
+
+            currentPosition = (results['x'], results['y'], results['z'])
+            if lastPosition != currentPosition:
+                #print "here is current position: " + repr(currentPosition)
+                sampleData[lastPosition][currentPosition]+=1
+                lastPosition = currentPosition
+                counter+=1
+        
+        temp = deepcopy(sampleData)
+        for i in temp.keys():
+            for j in temp[i].keys():
+                sampleData[i][j] = temp[i][j] / float(sampleLength)
+        if averageSoFar:
+            temp = deepcopy(sampleData)
+            for i in temp.keys():
+                for j in temp[i]:
+                    sampleData[i][j] = (temp[i][j] + averageSoFar[i][j]) / 2.0
+        return sampleData
 
 
 
+    def readSerial():
+        try:
+            data = ser.readline()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except serial.serialutil.SerialException as detail:
+            print 'Serial error:', detail
+        else:
+            data = data.split()
+            for i in range(len(data)): data[i] = int(data[i])
+            return data
