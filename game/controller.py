@@ -38,7 +38,9 @@ class PlayerController(object):
         self.view = view
         self._actionQueue = []
         self._currentAction = None
-
+        #Added these for gesture recognition
+        self._sensorQueue = []
+        self._currentSerialData = None
  
     def go(self):
         self.previousTime = pygame.time.get_ticks()
@@ -99,7 +101,12 @@ class PlayerController(object):
         time = pygame.time.get_ticks()
         self._updatePosition((time - self.previousTime) / 1000.0)
         self.previousTime = time
-
+        #This is where we would add a function call to update serial data
+        #This is where we would check if the scepter button is pressed
+        #If scepter button is pressed, this is where we check the accelerometer data
+        #If data has been collected number of times equal to sample data length:
+        # 1) do gesture recognition 
+        # 2) take out oldest sample and collect new one
         for event in pygame.event.get():
             if (event.type == pygame.QUIT) or ((event.type == pygame.KEYDOWN) and (event.key == QUIT)):
                 reactor.stop()
