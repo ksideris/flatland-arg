@@ -128,6 +128,9 @@ class PlayerController(object):
         #If player is pressing red button on scepter take two samples and add them to the average
         self._serialData = readSerial()
         if (self._serialData[3]):
+            # TODO: To make this non blocking we would want to do this in two stages
+            # essentially rewrite getSampleData as two seperate functions:
+            # buildSampleData() and averageSampleData()
             self._sample = getSampleData(2, self._sample)
             currentPattern = matchPattern()
         else:
@@ -175,9 +178,7 @@ class PlayerController(object):
         lastPosition = (0,0,0)
         areas = loadPattern("pickles/areas.pickle")
         counter = 0
-        #here we're going to wait in a while loop for the scepter to transition through two areas before we return
-        #this is a problem because it's blocking 
-        #need to break up this function into parts 
+        #here we would get rid of the while loop and just do this once per call in buildSampleData()
         while counter < sampleLength:
             keys = ['x', 'y', 'z']
             data = {'x': self._serialData[0], 'y': self._serialData[1], 'z': self._serialData[2]}
@@ -189,11 +190,12 @@ class PlayerController(object):
 
             currentPosition = (results['x'], results['y'], results['z'])
             if lastPosition != currentPosition:
-                #print "here is current position: " + repr(currentPosition)
                 sampleData[lastPosition][currentPosition]+=1
                 lastPosition = currentPosition
+                #this counter could be a global property that is used to decide when sample data is built and ready to be averaged
                 counter+=1
-        
+
+        #here is where we would break off the function to build averageSampleData()
         temp = deepcopy(sampleData)
         for i in temp.keys():
             for j in temp[i].keys():
