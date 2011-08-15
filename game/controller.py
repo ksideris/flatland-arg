@@ -50,7 +50,7 @@ class PlayerController(object):
 
         #Added these for gesture recognition
         self._attackRight = loadPattern("pickles/attackRightPattern.pickle")
-        self._attackLeft = loadPattern("pickles/attackLeftPattern.pickle")
+        self._upgrade = loadPattern("pickles/attackLeftPattern.pickle")
         self._scan = loadPattern("pickles/scanPattern.pickle")
         self._build = loadPattern("pickles/buildPattern.pickle")
         self._areas = loadPattern("pickles/areas.pickle")
@@ -127,22 +127,10 @@ class PlayerController(object):
         """
         Handle currently available pygame input events.
         """
+        handleSerialInput()
         time = pygame.time.get_ticks()
         self._updatePosition((time - self.previousTime) / 1000.0)
         self.previousTime = time
-        #If player is pressing red button on scepter take two samples, add them to the average, match to predefined patterns
-        self._serialData = readSerial()
-        if (self._serialData[3]):
-            buildSampleData()
-            if(self._sampleCnt == 2): 
-                averageSampleData()
-                self._currentPattern = matchPattern()
-        else:
-            #no action button pressed, no pattern matched, averages erased
-            self._currentPattern = None
-            #this could cause problems with unreliable serial connection, need to test
-            self._transitionAverages = initPattern(1)
-
         for event in pygame.event.get():
             if (event.type == pygame.QUIT) or ((event.type == pygame.KEYDOWN) and (event.key == QUIT)):
                 reactor.stop()
@@ -158,12 +146,29 @@ class PlayerController(object):
         if (not self._currentAction) and self._actionQueue:
             self._startedAction(self._actionQueue.pop())
 
+    def handleSerialInput(self):
+        #If player is pressing red button on scepter take two samples, add them to the average, match to predefined patterns
+        self._serialData = readSerial()
+        if self._serialData[3] == 1:
+            buildSampleData()
+            if self._sampleCnt == 2: 
+                averageSampleData()
+                self._currentPattern = matchPattern()
+                self._actionQueue.append(self._currentPattern)
+                
+        elif self._serialData[3] == 0 and self._currentPattern:
+            self._finishedAction()
+            #no action button pressed after matching a pattern; reset 
+            self._currentPattern = None
+            #this could cause problems with unreliable serial connection, need to test
+            self._transitionAverages = initPattern(1)
+
     def matchPattern(self):
         bestFit = {}
-        bestFit['attackRight'] = patternDifference(self._transitionAverages, attackRight)
-        bestFit['attackLeft'] = patternDifference(self._transitionAverages, attackLeft)
-        bestFit['build'] = patternDifference(self._transitionAverages, build)
-        bestFit['scan'] = patternDifference(self._transitionAverages, scan)
+        bestFit[ATTACK] = patternDifference(self._transitionAverages, self._attackRight)
+        bestFit[UPGRADE] = patternDifference(self._transitionAverages, self._upgrade)
+        bestFit[BUILD] = patternDifference(self._transitionAverages, self._build)
+        bestFit[SCAN] = patternDifference(self._transitionAverages, self._scan)
         return min(bestFit, key=bestFit.get)
 
     def patternDifference(self,a,b):
@@ -177,7 +182,7 @@ class PlayerController(object):
     def buildSampleData(self):
         """
         reads the accelerometer and finds what area it's in. 
-        if the area is different from the last area checked, record the transition in self._tempData
+        if the area is different from the last area checked, record the transition in self._sampleData
         """
         keys = ['x', 'y', 'z']
         data = readSerial()
@@ -195,7 +200,7 @@ class PlayerController(object):
         
     def averageSampleData(self):
         """
-        when two new transistions have been recored by buildSampleData()
+        when two new transistions have been recorded by buildSampleData()
         this function takes self._tempData and averages it with self._sampleData
         """
         temp = deepcopy(self._sampleData)
