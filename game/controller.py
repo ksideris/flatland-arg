@@ -46,14 +46,14 @@ class PlayerController(object):
         self._currentAction = None
 
         #Added these for gesture recognition
-        self._attackRight = self._loadPattern("pickles/attackRightPattern.pickle")
-        self._upgrade = self._loadPattern("pickles/attackLeftPattern.pickle")
-        self._scan = self._loadPattern("pickles/scanPattern.pickle")
-        self._build = self._loadPattern("pickles/buildPattern.pickle")
-        self._areas = self._loadPattern("pickles/areas.pickle")
+        self._attackRight = self._loadPattern("game/pickles/attackRightPattern.pickle")
+        self._upgrade = self._loadPattern("game/pickles/attackLeftPattern.pickle")
+        self._scan = self._loadPattern("game/pickles/scanPattern.pickle")
+        self._build = self._loadPattern("game/pickles/buildPattern.pickle")
+        self._areas = self._loadPattern("game/pickles/areas.pickle")
         #this is a list of area transitions
-        self._sampleData = None
-        self._transitionAverages = None
+        self._sampleData = self._initPattern(1)
+        self._transitionAverages = self._initPattern(1)
         #this is the current serial data
         self._serialData = None
         self._currentPattern = None
@@ -150,6 +150,7 @@ class PlayerController(object):
             self._buildSampleData()
             if self._sampleCnt == 2: 
                 self._averageSampleData()
+                #something is wrong with _matchPattern()
                 self._currentPattern = self._matchPattern()
                 self._actionQueue.append(self._currentPattern)
                 
@@ -201,7 +202,7 @@ class PlayerController(object):
         when two new transitions have been recorded by buildSampleData()
         this function takes self._tempData and averages it with self._sampleData
         """
-        temp = deepcopy(self._sampleData)
+        temp = self._sampleData
         for i in temp.keys():
             for j in temp[i].keys():
                 self._sampleData[i][j] = temp[i][j] / float(self._sampleCnt)
