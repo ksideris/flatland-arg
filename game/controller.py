@@ -14,11 +14,8 @@ import pygame.time
 import sys
 
 #Added these imports for gesture recognition
-import os
 import serial
 import pickle
-import atexit
-import time
 from copy import deepcopy
 
 
@@ -49,12 +46,12 @@ class PlayerController(object):
         self._currentAction = None
 
         #Added these for gesture recognition
-        self._attackRight = loadPattern("pickles/attackRightPattern.pickle")
-        self._upgrade = loadPattern("pickles/attackLeftPattern.pickle")
-        self._scan = loadPattern("pickles/scanPattern.pickle")
-        self._build = loadPattern("pickles/buildPattern.pickle")
-        self._areas = loadPattern("pickles/areas.pickle")
-        #this is a list of area transistions
+        self._attackRight = self._loadPattern("pickles/attackRightPattern.pickle")
+        self._upgrade = self._loadPattern("pickles/attackLeftPattern.pickle")
+        self._scan = self._loadPattern("pickles/scanPattern.pickle")
+        self._build = self._loadPattern("pickles/buildPattern.pickle")
+        self._areas = self._loadPattern("pickles/areas.pickle")
+        #this is a list of area transitions
         self._sampleData = None
         self._transitionAverages = None
         #this is the current serial data
@@ -127,7 +124,7 @@ class PlayerController(object):
         """
         Handle currently available pygame input events.
         """
-        handleSerialInput()
+        self._handleSerialInput()
         time = pygame.time.get_ticks()
         self._updatePosition((time - self.previousTime) / 1000.0)
         self.previousTime = time
@@ -146,14 +143,14 @@ class PlayerController(object):
         if (not self._currentAction) and self._actionQueue:
             self._startedAction(self._actionQueue.pop())
 
-    def handleSerialInput(self):
+    def _handleSerialInput(self):
         #If player is pressing red button on scepter take two samples, add them to the average, match to predefined patterns
-        self._serialData = readSerial()
+        self._serialData = self._readSerial()
         if self._serialData[3] == 1:
-            buildSampleData()
+            self._buildSampleData()
             if self._sampleCnt == 2: 
-                averageSampleData()
-                self._currentPattern = matchPattern()
+                self._averageSampleData()
+                self._currentPattern = self._matchPattern()
                 self._actionQueue.append(self._currentPattern)
                 
         elif self._serialData[3] == 0 and self._currentPattern:
@@ -161,17 +158,18 @@ class PlayerController(object):
             #no action button pressed after matching a pattern; reset 
             self._currentPattern = None
             #this could cause problems with unreliable serial connection, need to test
-            self._transitionAverages = initPattern(1)
+            self._transitionAverages = self._initPattern(1)
 
-    def matchPattern(self):
-        bestFit = {}
-        bestFit[ATTACK] = patternDifference(self._transitionAverages, self._attackRight)
-        bestFit[UPGRADE] = patternDifference(self._transitionAverages, self._upgrade)
-        bestFit[BUILD] = patternDifference(self._transitionAverages, self._build)
-        bestFit[SCAN] = patternDifference(self._transitionAverages, self._scan)
+    def _matchPattern(self):
+        bestFit = {
+            ATTACK : self._patternDifference(self._transitionAverages, self._attackRight),
+            UPGRADE : self._patternDifference(self._transitionAverages, self._upgrade),
+            BUILD : self._patternDifference(self._transitionAverages, self._build),
+            SCAN : self._patternDifference(self._transitionAverages, self._scan),
+        }
         return min(bestFit, key=bestFit.get)
 
-    def patternDifference(self,a,b):
+    def _patternDifference(self,a,b):
         totalDifference = float(sys.maxint)
         for i in a.keys():
             for j in a[i].keys():
@@ -179,47 +177,47 @@ class PlayerController(object):
         totalDifference = sys.maxint - totalDifference
         return totalDifference
 
-    def buildSampleData(self):
+    def _buildSampleData(self):
         """
         reads the accelerometer and finds what area it's in. 
         if the area is different from the last area checked, record the transition in self._sampleData
         """
         keys = ['x', 'y', 'z']
-        data = readSerial()
+        data = self._readSerial()
         data = {'x': data[0], 'y': data[1], 'z': data[2]}
         results = {}
         for k in keys:
-            if data[k] < areas[k][0]: results[k] = 0
-            elif data[k] < areas[k][1]: results[k] = 1
-            else results[k] = 2
+            if data[k] < self._areas[k][0]: results[k] = 0
+            elif data[k] < self._areas[k][1]: results[k] = 1
+            else: results[k] = 2
         currentPosition = (results['x'], results['y'], results['z'])
-        if lastPosition != currentPosition:
-            self._sampleData[lastPosition][currentPosition] += 1
+        if self._lastPosition != currentPosition:
+            self._sampleData[self._lastPosition][currentPosition] += 1
             self._lastPosition = currentPosition
             self._sampleCnt += 1            
         
-    def averageSampleData(self):
+    def _averageSampleData(self):
         """
-        when two new transistions have been recorded by buildSampleData()
+        when two new transitions have been recorded by buildSampleData()
         this function takes self._tempData and averages it with self._sampleData
         """
         temp = deepcopy(self._sampleData)
         for i in temp.keys():
             for j in temp[i].keys():
                 self._sampleData[i][j] = temp[i][j] / float(self._sampleCnt)
-        if (self._transitionAverages):
+        if self._transitionAverages:
             temp = deepcopy(self._transitionAverages)
             for i in temp.keys():
                 for j in temp[i]:
                     self._transitionAverages[i][j] = ( temp[i][j] + self._sampleData[i][j] ) / 2.0
         #reset vars for buildSampleData()
-        self._sampleData = initPattern(1)
+        self._sampleData = self._initPattern(1)
         self._sampleCnt = 0
 
 
-    def readSerial(self):
+    def _readSerial(self):
         try:
-            data = ser.readline()
+            data = self._ser.readline()
         except (KeyboardInterrupt, SystemExit):
             raise
         except serial.serialutil.SerialException as detail:
@@ -230,14 +228,18 @@ class PlayerController(object):
             return data
 
 
-    def initPattern(self,level):
+    def _initPattern(self,level):
         p = {}
         for i in range(3):
             for j in range(3):
                 for k in range(3):
                     if level > 0:
-                        p[i,j,k] = initPattern(level-1)
+                        p[i,j,k] = self._initPattern(level-1)
                     else:
                         p[i,j,k] = 0
-                    
         return p
+
+    
+    def _loadPattern(self,fileName):
+        with open(str(fileName), 'rb') as f:
+            return pickle.load(f)
