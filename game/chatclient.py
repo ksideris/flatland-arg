@@ -6,13 +6,18 @@ import environment
 import player
 import vector
 from game.view import Window
-from game.controller import PlayerController
 from twisted.spread import pb
 from twisted.internet import defer
 from twisted.internet import reactor
 from twisted.cred import credentials
 from twisted.internet.protocol import DatagramProtocol
 import pygame
+import os
+
+if os.environ.get("FARG_INPUT") == "wand":
+    from game.actions_wand import PlayerController
+else:
+    from game.actions_keyboard import PlayerController
 
 class Bootstrap(DatagramProtocol):
     def datagramReceived(self, datagram, address):
@@ -20,7 +25,7 @@ class Bootstrap(DatagramProtocol):
             self.port.stopListening()
             ip, port = address
             Client().connect(ip)
-            
+
 
 class Client():
     def connect(self, ip):

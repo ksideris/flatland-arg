@@ -1,7 +1,13 @@
 # ignore compiled python files
 *.pyc
+.project
+.pydevproject
+*~
 
 # ignore py2app build files
 /*.egg
 /dist/
 /build/
+
+#ignore IDE files
+/.idea/
