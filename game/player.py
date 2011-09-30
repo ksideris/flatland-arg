@@ -5,7 +5,7 @@ from twisted.spread import pb
 from vector import Vector2D
 from twisted.internet import reactor
 
-#This comment is not important.
+#This comment is still not important.
 
 class PlayerScan:
     def __init__(self):
