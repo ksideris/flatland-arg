@@ -72,6 +72,9 @@ class Window(object):
             x += bgWidth
         self.environment.paint(self)
         if self.action:
+
+        #   self.action.draw(self.screen, Vector2D((240, 400)))
+
             pass
         pygame.display.flip()
 

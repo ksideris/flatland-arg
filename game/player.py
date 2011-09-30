@@ -140,6 +140,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
             #TODO should probably play some kind of sound here
         elif self.resources < self.sides:
             self.resources += 1
+            
             actuallyGainResource = True
             
             #animation = self.images["ArmorBreak", self.sides, self.resources].copy()
@@ -169,13 +170,12 @@ class Player(pb.Cacheable, pb.RemoteCache):
                     pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/Points Full.ogg"))
                 
     
-
     def gainResource(self):
         self._gainResource(playSound = True)
         
         for o in self.observers: o.callRemote('gainResource')
     observe_gainResource = _gainResource
-    
+
     def _loseResource(self, playSound = False):
 
         if self.resources:

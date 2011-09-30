@@ -11,7 +11,6 @@ class Images:
         self.images["Generic_1"] = Animation(dir.child("effects").child("multi_use_action").child("multi_use_action%04d.png"))
         self.images["Generic_2"] = Animation(dir.child("effects").child("multi_use_action2").child("multi_use_action2_%04d.png"))
 
-        #self.images["ArmorBreak"] =
 
         self._initPlayerImages(dir)
         self._initBuildingImages(dir)
