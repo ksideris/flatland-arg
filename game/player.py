@@ -36,7 +36,7 @@ class PlayerScan:
         dt = (pygame.time.get_ticks() - self.startTime)
         if self._radius:
             return self._radius * (1 - (dt / 5000.0))
-        return (math.log1p(min(1, (dt / 10000.0) / (math.e - 1))) * .65) + 0.35
+        return (math.log1p(min(1, (dt / 5000.0) / (math.e - 1))) * .9) + 0.1
 
     def __nonzero__(self):
         if self.startTime == 0:
@@ -75,6 +75,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.actionName = None
         self.scanFadeOutOk = False
         self.stopBuildingChannelOk = True
+        self.hadResources = False
         #self.pointsFullPlayOk = True
         #self.sounds = dict()
         #self.sounds['Building 3-Sided'] = pygame.mixer.Sound("data/sfx/alex_sfx/Building 3-sided.ogg")
@@ -179,16 +180,30 @@ class Player(pb.Cacheable, pb.RemoteCache):
     def _loseResource(self, playSound = False):
 
         if self.resources:
-            self.breakArmor(self.sides, self.resources)
             
-            self.armor.pop(self.resources)
+            infiniteResources = False
+            if not infiniteResources:
+                self.breakArmor(self.sides, self.resources)
             
-            self.resources -= 1 #TODO Restore
+                self.armor.pop(self.resources)
+            
+                self.resources -= 1
             
             if playSound:
+                #TODO building complete sounds should be played here
                 loseResourceSound = pygame.mixer.Sound("data/sfx/alex_sfx/pay resource.ogg")
-                loseResourceSound.set_volume(.4)
+                loseResourceSound.set_volume(.6)
                 pygame.mixer.Channel(6).play(loseResourceSound)
+                #print "the building : " + str(self.building.sides) + "-sided, resources =" + str(self.building.resources) + "\n"
+                if self.building.resources == 0:#self.building.nResourcesToUpgrade() == 1:#self.building.sides == self.building.resources and self.building.sides >= 3:
+                    print("upgrade!")
+                    pygame.mixer.Channel(7).stop()
+                    self.playingBuildingCompleteSound = True
+                    pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/Finish " + str(self.building.sides) + "-sided.ogg"), 0)
+                    #TODO should reset the building sound too
+                
+                elif self.resources == 0:
+                    pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/resources depleted.ogg"),0)
             
             #donothing=0
     def loseResource(self):
@@ -236,7 +251,10 @@ class Player(pb.Cacheable, pb.RemoteCache):
                 if (hasattr(self.building, 'sides') and self.actionName == 'Building'):# and self.resources:
                 
                     if self.resources == 0:
-                        pygame.mixer.Channel(7).stop()
+                        #if not self.playingBuildingCompleteSound or not pygame.mixer.Channel(7).get_busy():
+                        if (not self.playingBuildingCompleteSound or not pygame.mixer.Channel(7).get_busy()):
+                            pygame.mixer.Channel(7).stop()
+                            self.playingBuildingCompleteSound = False
                         
                     else:
                         buildingSideCount = self.building.sides
@@ -261,10 +279,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
                     if self.stopBuildingChannelOk or not pygame.mixer.Channel(7).get_busy():
                         pygame.mixer.Channel(7).stop()
                         stopBuildingChannelOk = True
-            
-        
-
-                    
+                        
             
     def updatePosition(self, position, building):
         self._updatePosition(position, building, playSound=True)
@@ -371,19 +386,32 @@ class Building(pb.Cacheable, pb.RemoteCache):
                 else:
                     self.upgrading.gainResource()
         else:
-            player.loseResource()
             self.gainResource()
+            player.loseResource() #have player lose resource after, so they can see if a new building got made.
         for o in player.observers: o.callRemote('setAction', "Building")
 
+    
+    #These functions are kind of silly, but a more straightforward way
+    #would require more state
+#    def nResourcesToUpgrade(self):
+#        if self.sides == 0:
+#            return 3 - self.resources
+#        else:
+#            return self.sides - self.resources
+#    
+#    def nSidesAfterUpgrade(self):
+#        if self.sides == 0:
+#            return 3
+#        else:
+#            return self.sides + 1
+        
     def _gainResource(self, playSound=False):
         # Not a full polyfactory
         # if rubble
-        buildingLeveledUp = False
         if not self.sides:
             if self.resources == 2:
                 self.sides = 3
                 self.resources = 0
-                buildingLeveledUp = True
             else:
                 self.resources += 1
         else:
@@ -391,17 +419,8 @@ class Building(pb.Cacheable, pb.RemoteCache):
             if self.sides == self.resources:
                 self.sides += 1
                 self.resources = 0
-                buildingLeveledUp = True
             else:
-                self.resources += 1
-        
-        #Play an upgrade sound, 
-        
-        if (playSound and buildingLeveledUp):
-            self.playingBuildingCompleteSound = True
-            pygame.mixer.Channel(7).stop()
-            pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/Finish " + str(self.sides) + "-sided.ogg"), 0)
-        
+                self.resources += 1        
         
     def gainResource(self):
         self._gainResource(playSound=True)

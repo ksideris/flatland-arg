@@ -20,11 +20,15 @@ class Images:
         self.images["PlayerScan"] = Image(dir.child("players").child("scan").child("player_scan.png"))
         teamDir = dir.child("players").child("polygons")
         sides = {0 : "dot", 1 : "line", 2 : "cross", 3 : "tri", 4 : "sqr", 5 : "pent", 6 : "hex"}
+        
+        #offsets = {"dot" : (0,0), "line" : (0,0), "cross" : (0,0), "tri" : (0,-5), "sqr" : (0,0), "pent" : (0,0), "hex" : (0,0)}
+        offsets = {0 : (0,0), 1 : (0,0), 2 : (0,0), 3 : (0,0), 3 : (0,-5), 4 : (0,0), 5 : (0,0), 6 : (0,0)}
+        
         firstPerson = {(True, True) : "player", (False, True) : "team", (False, False): "enemy"}
         for p in firstPerson:
             for s in sides:
                 path = teamDir.child(sides[s]).child("%s_%s.png" % (sides[s], firstPerson[p]))
-                self.images["Player", p, s] = Image(path)
+                self.images["Player", p, s] = Image(path, offsets[s])
         self.images["Enemy"] = LoopingAnimation(teamDir.child("enemy_unidentified").child("enemy_unidentified%04d.png"))
 
     def _initBuildingImages(self, dir):

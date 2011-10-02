@@ -1,6 +1,7 @@
 from twisted.internet.task import LoopingCall
 import pygame
 import itertools
+import math
 from vector import Vector2D
 
 def _loadImage(path):
@@ -40,7 +41,16 @@ class Image(object):
 
     def drawScaled(self, screen, position, scale):
         center = self.center * scale
-        image = pygame.transform.smoothscale(self._image, center * 2)
+        
+        center.x = math.ceil(center.x)
+        center.y = math.ceil(center.y)
+        
+        #print str(center.x) + ", " + str(center.y) + "\n"
+        size = Vector2D(math.ceil(2*center.x), math.ceil(2*center.y))
+        
+        
+        
+        image = pygame.transform.smoothscale(self._image, size)
         imagePosition = (position[0] - center[0], position[1] - center[1])
         screen.blit(image, imagePosition)
 
