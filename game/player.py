@@ -35,21 +35,22 @@ class PlayerScan:
             return 0
         dt = (pygame.time.get_ticks() - self.startTime)
         if self._radius:
-            return self._radius * (1 - (dt / 5000.0))
-        return (math.log1p(min(1, (dt / 5000.0) / (math.e - 1))) * .9) + 0.1
+            if dt >= 5000.0:
+                return 0;
+            else:
+                return self._radius * (1 - (dt / 5000.0))
+        return (math.log1p(min(1, (dt / 10000.0) / (math.e - 1))) * .9) + 0.1
+
 
     def __nonzero__(self):
         if self.startTime == 0:
             return False
         return True
-    
+
     def isScanning(self):
         return self._isScanning
 
 class Player(pb.Cacheable, pb.RemoteCache):
-    
-    # Some sounds
-    
     def __init__(self):
         #pb.Cacheable.__init__(self)
         #pb.RemoteCache.__init__(self)
@@ -80,13 +81,19 @@ class Player(pb.Cacheable, pb.RemoteCache):
         #self.sounds = dict()
         #self.sounds['Building 3-Sided'] = pygame.mixer.Sound("data/sfx/alex_sfx/Building 3-sided.ogg")
 
+        #sound related state
+        self.playingBuildingCompleteSound = False
+        self.actionName = None
+        self.scanFadeOutOk = False
+        self.stopBuildingChannelOk = True
+
     def _startScanning(self):
         self.scanning.start()
-        
+
     def startScanning(self):
         self._startScanning()
         for o in self.observers: o.callRemote('startScanning')
-    
+
     observe_startScanning = _startScanning
 
     def _finishScanning(self):
@@ -106,36 +113,36 @@ class Player(pb.Cacheable, pb.RemoteCache):
             self.resources = 0
         else:
             self.sides = 0
-            
+
         if (playSound):
             pygame.mixer.Channel(6).play(pygame.mixer.Sound("data/sfx/alex_sfx/Trigger Trap.ogg"))
             pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/Attack Hit.ogg"))
-        
+
     def trapped(self):
         self.observe_trapped(playSound = True)
         for o in self.observers: o.callRemote('trapped')
 
     def setAction(self, remote, local):
         self.action = local
-        
+
         if (remote != "Mining" and remote != "Building"):
             pygame.mixer.Channel(7).stop()
-            
+
         self.actionName = remote
 
         for o in self.observers: o.callRemote('setAction', remote)
-        
         
     def observe_setAction(self, action):
         self.actionName = action
         # TODO Tooltips no longer used?
         self.tooltip = None
+        self.actionName = action
 
 
     def _gainResource(self, playSound = False):
         playResourceFullOk = False
         actuallyGainResource = False
-        
+
         if self.sides < 3:
             self.sides += 1
             #TODO should probably play some kind of sound here
@@ -163,22 +170,19 @@ class Player(pb.Cacheable, pb.RemoteCache):
                 #It's possible if the sound changes, that restarting the mining sound will sound good
                 #pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).ogg"))
                 
-                
             if self.resources == self.sides:
                 pygame.mixer.Channel(7).stop()
                 if (playResourceFullOk):
                     self.stopBuildingChannelOk = False
                     pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/Points Full.ogg"))
-                
-    
+
     def gainResource(self):
         self._gainResource(playSound = True)
-        
+
         for o in self.observers: o.callRemote('gainResource')
     observe_gainResource = _gainResource
 
     def _loseResource(self, playSound = False):
-
         if self.resources:
             
             infiniteResources = False
@@ -205,7 +209,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
                 elif self.resources == 0:
                     pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/resources depleted.ogg"),0)
             
-            #donothing=0
+
     def loseResource(self):
         self._loseResource(playSound = True)
         for o in self.observers: o.callRemote('loseResource')
@@ -274,13 +278,11 @@ class Player(pb.Cacheable, pb.RemoteCache):
                             pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).ogg"))
                         else:
                             pygame.mixer.Channel(7).queue(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).ogg"))
-                
                 else:
                     if self.stopBuildingChannelOk or not pygame.mixer.Channel(7).get_busy():
                         pygame.mixer.Channel(7).stop()
                         stopBuildingChannelOk = True
-                        
-            
+
     def updatePosition(self, position, building):
         self._updatePosition(position, building, playSound=True)
         for o in self.observers: o.callRemote('updatePosition', position, building)
@@ -390,28 +392,15 @@ class Building(pb.Cacheable, pb.RemoteCache):
             player.loseResource() #have player lose resource after, so they can see if a new building got made.
         for o in player.observers: o.callRemote('setAction', "Building")
 
-    
-    #These functions are kind of silly, but a more straightforward way
-    #would require more state
-#    def nResourcesToUpgrade(self):
-#        if self.sides == 0:
-#            return 3 - self.resources
-#        else:
-#            return self.sides - self.resources
-#    
-#    def nSidesAfterUpgrade(self):
-#        if self.sides == 0:
-#            return 3
-#        else:
-#            return self.sides + 1
-        
     def _gainResource(self, playSound=False):
         # Not a full polyfactory
         # if rubble
+        buildingLeveledUp = False
         if not self.sides:
             if self.resources == 2:
                 self.sides = 3
                 self.resources = 0
+                buildingLeveledUp = True
             else:
                 self.resources += 1
         else:
@@ -419,6 +408,7 @@ class Building(pb.Cacheable, pb.RemoteCache):
             if self.sides == self.resources:
                 self.sides += 1
                 self.resources = 0
+                buildingLeveledUp = True
             else:
                 self.resources += 1        
         

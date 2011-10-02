@@ -30,7 +30,6 @@ class Image(object):
         self.width, self.height = self._image.get_rect().size
 
     def draw(self, screen, position):
-        
         if self.degrees == None:
             imagePosition = position - self.center + self.offset
             screen.blit(self._image, imagePosition)
