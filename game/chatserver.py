@@ -59,7 +59,6 @@ class GameAvatar(pb.Avatar):
     def perspective_getTeam(self):
         return self.player.team
     def perspective_switchTeams(self):
-        print "team switch perspective!"
         return self.environment.switchTeams(self.player)
     #TODO could we add a perspective_getPosition and perspective_getIRTargetStatus here
     #TODO otherwise, how do we do remote call on a client?

@@ -177,38 +177,47 @@ class Player(pb.Cacheable, pb.RemoteCache):
                     pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/Points Full.ogg"))
 
     def gainResource(self):
+        print "team: " + str(self.team)
         self._gainResource(playSound = True)
 
         for o in self.observers: o.callRemote('gainResource')
     observe_gainResource = _gainResource
 
+    def switchTeams(self):
+        #print "team: " + str(self.team)
+        if self.team == 1:
+            self.team = 2
+        else:
+            self.team = 1
+        
+
     def _loseResource(self, playSound = False):
         if self.resources:
-            
-            infiniteResources = False
-            if not infiniteResources:
-                self.breakArmor(self.sides, self.resources)
-            
-                self.armor.pop(self.resources)
-            
-                self.resources -= 1
+            if self.building:
+                infiniteResources = True
+                if not infiniteResources:
+                    self.breakArmor(self.sides, self.resources)
+                    self.armor.pop(self.resources)
+                    self.resources -= 1
             
             if playSound:
                 #TODO building complete sounds should be played here
-                loseResourceSound = pygame.mixer.Sound("data/sfx/alex_sfx/pay resource.ogg")
-                loseResourceSound.set_volume(.6)
-                pygame.mixer.Channel(6).play(loseResourceSound)
-                #print "the building : " + str(self.building.sides) + "-sided, resources =" + str(self.building.resources) + "\n"
-                if self.building.resources == 0:#self.building.nResourcesToUpgrade() == 1:#self.building.sides == self.building.resources and self.building.sides >= 3:
-                    print("upgrade!")
+                if not self.building:
                     pygame.mixer.Channel(7).stop()
-                    self.playingBuildingCompleteSound = True
-                    pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/Finish " + str(self.building.sides) + "-sided.ogg"), 0)
-                    #TODO should reset the building sound too
+                else:
+                    loseResourceSound = pygame.mixer.Sound("data/sfx/alex_sfx/pay resource.ogg")
+                    loseResourceSound.set_volume(.6)
+                    pygame.mixer.Channel(6).play(loseResourceSound)
+                    #print "the building : " + str(self.building.sides) + "-sided, resources =" + str(self.building.resources) + "\n"
+                    if self.building.resources == 0:#self.building.nResourcesToUpgrade() == 1:#self.building.sides == self.building.resources and self.building.sides >= 3:
+                        pygame.mixer.Channel(7).stop()
+                        self.playingBuildingCompleteSound = True
+                        pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/Finish " + str(self.building.sides) + "-sided.ogg"), 0)
+                        #TODO should reset the building sound too
+                    
+                    elif self.resources == 0:
+                        pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/resources depleted.ogg"),0)
                 
-                elif self.resources == 0:
-                    pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/resources depleted.ogg"),0)
-            
 
     def loseResource(self):
         self._loseResource(playSound = True)
@@ -286,6 +295,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
     def updatePosition(self, position, building):
         self._updatePosition(position, building, playSound=True)
         for o in self.observers: o.callRemote('updatePosition', position, building)
+    
     observe_updatePosition = _updatePosition
 
     def breakArmor(self, sides, resources):
@@ -298,9 +308,10 @@ class Player(pb.Cacheable, pb.RemoteCache):
             self.resources -= 1
         else:
             animation = self.images["LevelUp"].copy()
-            animation.startReversed(12).addCallback(lambda ign: self.topEvents.remove(animation))
+            animation.startReversed(72).addCallback(lambda ign: self.topEvents.remove(animation))
             self.topEvents.add(animation)
             self.sides -= 1
+            
     def hit(self):
         self._hit()
         for o in self.observers: o.callRemote('hit')
@@ -311,9 +322,9 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.resources = 0
         self.sides += 1
 
-        animation = self.images["LevelUp"].copy()
-        animation.start(12).addCallback(lambda ign: self.topEvents.remove(animation))
-        self.topEvents.add(animation)
+        #animation = self.images["building upgraded"].copy()
+        #animation.start(12).addCallback(lambda ign: self.topEvents.remove(animation))
+        #self.topEvents.add(animation)
     def levelUp(self):
         self._levelUp()
         for o in self.observers: o.callRemote('levelUp')
@@ -324,7 +335,8 @@ class Player(pb.Cacheable, pb.RemoteCache):
         # likely caused by view.center being updated but not player.position
         # which must wait for the server to update its
         if self.self:
-            position = Vector2D(240, 400)
+            (cx, cy) = view.screen.get_rect().center
+            position = Vector2D(cx,cy) #Vector2D(240, 400)
         # TODO HACK save the view to get images
         self.images = view.images.images
 
@@ -376,6 +388,7 @@ class Building(pb.Cacheable, pb.RemoteCache):
         self.onDestroyed = defer.Deferred()
         self.upgrading = None
         self.explosion = None
+        self.upgradeAnim = None
 
     def build(self, player):
         if not player.resources:
@@ -410,7 +423,14 @@ class Building(pb.Cacheable, pb.RemoteCache):
                 self.resources = 0
                 buildingLeveledUp = True
             else:
-                self.resources += 1        
+                self.resources += 1
+        
+        if buildingLeveledUp:
+            self.upgradeAnim = self.images["building upgraded"].copy()
+            self.upgradeAnim.start(12).addCallback(lambda ign: self.clearUpgradeAnim())
+        
+    def clearUpgradeAnim(self):
+        self.upgradeAnim = None    
         
     def gainResource(self):
         self._gainResource(playSound=True)
@@ -432,6 +452,12 @@ class Building(pb.Cacheable, pb.RemoteCache):
 
         if self.sides == 0 and self.resources == 0:
             return
+
+        if self.sides >= 3:
+            view.images.images["Building Zone", self.sides, isTeammate].draw(view.screen, position)
+
+        if self.upgradeAnim:
+            self.upgradeAnim.draw(view.screen, position)
 
         if self.sides:
             view.images.images["Building", self.sides, isTeammate].draw(view.screen, position)
@@ -456,8 +482,10 @@ class Building(pb.Cacheable, pb.RemoteCache):
             for o in self.observers: o.callRemote('setResources', self.resources)
 
     def _explode(self):
+        #TODO a delay to the explosion would be nice.
         self.explosion = self.images["TrapExplosion"].copy()
-        return self.explosion.start(24)
+        return self.explosion.start(4)
+    
     def explode(self):
         self._explode().addCallback(lambda ign: self.onDestroyed.callback(self))
         for o in self.observers: o.callRemote('explode')

@@ -8,13 +8,11 @@ class Images:
         self.images["background"] = Image(dir.child("other").child("bg_tile.png"))
         self.images["Attack"] = Animation(dir.child("players").child("attack").child("attack%04d.png"))
         self.images["LevelUp"] = Animation(dir.child("effects").child("player_lvlup").child("player_lvlup%04d.png"))
-        
+
+        #TODO try to give these more descriptive names        
         self.images["Generic_1"] = Animation(dir.child("effects").child("multi_use_action").child("multi_use_action%04d.png"))
         self.images["Generic_2"] = Animation(dir.child("effects").child("multi_use_action2").child("multi_use_action2_%04d.png"))
-
-
-        self.images["Generic_1"] = Animation(dir.child("effects").child("multi_use_action").child("multi_use_action%04d.png"))
-        self.images["Generic_2"] = Animation(dir.child("effects").child("multi_use_action2").child("multi_use_action2_%04d.png"))
+        self.images["player upgraded"] = Animation(dir.child("effects").child("player_lvlup").child("player_lvlup%04d.png"))
 
         self._initPlayerImages(dir)
         self._initBuildingImages(dir)
@@ -39,7 +37,7 @@ class Images:
         buildingsDir = dir.child("buildings")
 
         resource1 = Image(dir.child("resource").child("resource01.png"))
-        resource2 = Image(dir.child("resource").child("resource01.png"))
+        resource2 = Image(dir.child("resource").child("resource02.png"))
 
         teammate = {True : "", False : "_enemy"}
         sides = {3 : "trap", 4 : "sentry", 5 : "polyfactory"}
@@ -57,12 +55,22 @@ class Images:
 
                 pathBuilder = buildingsDir
                 pathBuilder = pathBuilder.child(sides[s])
+                pathBuilder = pathBuilder.child("%s_zones" % (sides[s]))
+                pathBuilder = pathBuilder.child("%s_zone%s.png" % (sides[s], teammate[t]))
+                self.images["Building Zone", s, t] = Image(pathBuilder)
+                
+                
+                pathBuilder = buildingsDir
+                pathBuilder = pathBuilder.child(sides[s])
                 pathBuilder = pathBuilder.child("%s_armor%s" % (sides[s], teammate[t]))
+                
+                
                 for resources in range(0, s + 1):
                     armorPath = pathBuilder.child("%s_armor%s%02d.png" % (sides[s], teammate[t], resources))
                     self.images["BuildingHealth", t, s, resources] = Image(armorPath, offsets[s])
 
         self.images["TrapExplosion"] = Animation(dir.child("effects").child("explosion").child("explosion%04d.png"))
+        self.images["building upgraded"] = Animation(dir.child("effects").child("build_effect").child("build_effect%04d.png"))
 
     def _initArmorImages(self, dir):
         armorDir = dir.child("players").child("armor")

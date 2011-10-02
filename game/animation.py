@@ -45,7 +45,7 @@ class Image(object):
         center.y = math.ceil(center.y)
         
         #print str(center.x) + ", " + str(center.y) + "\n"
-        size = Vector2D(math.ceil(2*center.x), math.ceil(2*center.y))
+        size = Vector2D(int(math.ceil(2*center.x)), int(math.ceil(2*center.y)))
         
         
         

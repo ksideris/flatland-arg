@@ -20,7 +20,8 @@ from pygame import (K_a as ATTACK,
                     K_DOWN as MOVE_DOWN,
                     K_UP as MOVE_UP,
                     K_LEFT as MOVE_LEFT,
-                    K_RIGHT as MOVE_RIGHT)
+                    K_RIGHT as MOVE_RIGHT,
+                    K_z as SWITCH_TEAMS)
 
 from game.vector import Vector2D
 
@@ -31,7 +32,7 @@ class PlayerController(object):
     @ivar player: The player being controlled.
     @ivar downDirections: List of currently held arrow keys.
     """
-    _actions = set([ATTACK, SCAN, BUILD, UPGRADE])
+    _actions = set([ATTACK, SCAN, BUILD, UPGRADE, SWITCH_TEAMS])
 
     def __init__(self, perspective, view):
         self.perspective = perspective
@@ -95,6 +96,9 @@ class PlayerController(object):
         
         lastAction = self._currentAction
         self._currentAction = action
+        
+        if self._currentAction == SWITCH_TEAMS:
+            self.perspective.callRemote("switchTeams")
         
         if self._currentAction == ATTACK:
             self.perspective.callRemote('startAttacking')
@@ -182,8 +186,9 @@ class PlayerController(object):
                         self._finishedAction()
                     else:
                         if not event.key in self._actionQueue:
-                            print str(event.key)
-                        self._actionQueue.remove(event.key)
+                            print "mystery key error: " + str(event.key)
+                        if event.key in self._actionQueue:
+                            self._actionQueue.remove(event.key)
 
         if (not self._currentAction) and self._actionQueue:
             self._startedAction(self._actionQueue.pop())

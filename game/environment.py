@@ -9,8 +9,8 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         self.players = {}
         self.rp = ResourcePool(100)
         self.rp.position = Vector2D(0, 0)
-        self.width = 48.0
-        self.height = 80.0
+        self.width = 80.0#48.0
+        self.height = 48.0#80.0
         self.buildings = {}
         self.team = None
 
@@ -71,7 +71,9 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
     def startBuilding(self, player):
         if not player.building:
-            building = self.createBuilding(player.team, player.position)
+            newBuildingPosition = player.position
+            newBuildingPosition.y = newBuildingPosition.y + 2 #TODO this will likely have to change to x for the phone
+            building = self.createBuilding(player.team, newBuildingPosition)
             if building:
                 player.updatePosition(player.position, building)
             else:
@@ -155,5 +157,8 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
     def stoppedObserving(self, perspective, observer):
         self.observers.remove(observer)
+    
+    def switchTeams(self, player):
+        player.switchTeams()
 
 pb.setUnjellyableForClass(Environment, Environment)
