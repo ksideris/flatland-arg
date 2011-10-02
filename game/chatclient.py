@@ -48,7 +48,8 @@ class Client():
         reactor.stop()
 
 pygame.init()
-pygame.display.set_mode((480, 800), pygame.DOUBLEBUF)
+#pygame.display.set_mode((480, 800), pygame.DOUBLEBUF)#for computers
+pygame.display.set_mode((800, 480), pygame.DOUBLEBUF)#for phone
 # TODO: restore background music
 #pygame.mixer.music.load("data/sfx/background.mp3")
 #pygame.mixer.music.play(-1)
