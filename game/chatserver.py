@@ -58,6 +58,9 @@ class GameAvatar(pb.Avatar):
         return self.environment
     def perspective_getTeam(self):
         return self.player.team
+    def perspective_switchTeams(self):
+        print "team switch perspective!"
+        return self.environment.switchTeams(self.player)
     #TODO could we add a perspective_getPosition and perspective_getIRTargetStatus here
     #TODO otherwise, how do we do remote call on a client?
 
@@ -80,7 +83,7 @@ class TrackerPort(pb.Root):
 
 
 pygame.init()
-pygame.display.set_mode((480, 800), pygame.DOUBLEBUF)
+pygame.display.set_mode((800, 480), pygame.DOUBLEBUF)
 realm = GameRealm()
 env = Environment()
 view = Window(env)
