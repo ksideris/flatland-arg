@@ -284,9 +284,9 @@ class Player(pb.Cacheable, pb.RemoteCache):
                 elif self.actionName == 'Mining':
                     if self.resources < self.sides:
                         if not pygame.mixer.Channel(7).get_busy():
-                            pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).ogg"))
+                            pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).wav"))
                         else:
-                            pygame.mixer.Channel(7).queue(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).ogg"))
+                            pygame.mixer.Channel(7).queue(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).wav"))
                 else:
                     if self.stopBuildingChannelOk or not pygame.mixer.Channel(7).get_busy():
                         pygame.mixer.Channel(7).stop()
