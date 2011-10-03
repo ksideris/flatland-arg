@@ -72,7 +72,9 @@ class Environment(pb.Cacheable, pb.RemoteCache):
     def startBuilding(self, player):
         if not player.building:
             newBuildingPosition = player.position
-            newBuildingPosition.y = newBuildingPosition.y + 2 #TODO this will likely have to change to x for the phone
+            
+            newBuildingPosition.x = newBuildingPosition.x + 2 #TODO this will likely have to change to x for the phone
+            
             building = self.createBuilding(player.team, newBuildingPosition)
             if building:
                 player.updatePosition(player.position, building)

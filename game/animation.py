@@ -4,8 +4,13 @@ import itertools
 import math
 from vector import Vector2D
 
+rotateForTablet = True
+
 def _loadImage(path):
     image = pygame.image.load(path)
+    if rotateForTablet:
+        image = pygame.transform.rotate(image, 90)
+        
     # TODO Are all of our images alpha'd now?
     if True:
         image = image.convert_alpha()
@@ -16,9 +21,17 @@ def _loadImage(path):
 
 class Image(object):
     def __init__(self, path, offset = (0,0)):
+        
+        ox = offset[0]
+        oy = offset[1]
+        if rotateForTablet:
+            ox = offset[1]
+            oy = offset[0]
+ 
+        
         if path:
             self.path = path.path
-        self.offset = Vector2D(offset)
+        self.offset = Vector2D(ox, oy)
         self.degrees = None
 
     def load(self):
