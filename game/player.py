@@ -106,7 +106,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
     def getScanRadius(self):
         return self.scanning.radius()
 
-    def observe_trapped(self, playSound = False):
+    def observe_trapped(self, playSound = True):
         if self.resources:
             for i in range(self.resources, 0, -1):
                 self.breakArmor(self.sides, i)
@@ -119,7 +119,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
             pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/Attack Hit.ogg"))
 
     def trapped(self):
-        self.observe_trapped(playSound = True)
+        self.observe_trapped(playSound = False)
         for o in self.observers: o.callRemote('trapped')
 
     def setAction(self, remote, local):
@@ -139,7 +139,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.actionName = action
 
 
-    def _gainResource(self, playSound = False):
+    def _gainResource(self, playSound = True):
         playResourceFullOk = False
         actuallyGainResource = False
 
@@ -178,7 +178,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
 
     def gainResource(self):
         print "team: " + str(self.team)
-        self._gainResource(playSound = True)
+        self._gainResource(playSound = False)
 
         for o in self.observers: o.callRemote('gainResource')
     observe_gainResource = _gainResource
@@ -191,7 +191,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
             self.team = 1
         
 
-    def _loseResource(self, playSound = False):
+    def _loseResource(self, playSound = True):
         if self.resources:
             if self.building:
                 infiniteResources = True
@@ -220,7 +220,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
                 
 
     def loseResource(self):
-        self._loseResource(playSound = True)
+        self._loseResource(playSound = False)
         for o in self.observers: o.callRemote('loseResource')
     observe_loseResource = _loseResource
 
@@ -233,7 +233,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
         for o in self.observers: o.callRemote('attack')
     observe_attack = _attack
 
-    def _updatePosition(self, position, building, playSound=False):
+    def _updatePosition(self, position, building, playSound=True):
         self.position = position
         # TODO only need this for self.self
         def buildingReset():
@@ -293,7 +293,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
                         stopBuildingChannelOk = True
 
     def updatePosition(self, position, building):
-        self._updatePosition(position, building, playSound=True)
+        self._updatePosition(position, building, playSound=False)
         for o in self.observers: o.callRemote('updatePosition', position, building)
     
     observe_updatePosition = _updatePosition
@@ -405,7 +405,7 @@ class Building(pb.Cacheable, pb.RemoteCache):
             player.loseResource() #have player lose resource after, so they can see if a new building got made.
         for o in player.observers: o.callRemote('setAction', "Building")
 
-    def _gainResource(self, playSound=False):
+    def _gainResource(self, playSound=True):
         # Not a full polyfactory
         # if rubble
         buildingLeveledUp = False
@@ -433,7 +433,7 @@ class Building(pb.Cacheable, pb.RemoteCache):
         self.upgradeAnim = None    
         
     def gainResource(self):
-        self._gainResource(playSound=True)
+        self._gainResource(playSound=False)
         for o in self.observers: o.callRemote('gainResource')
     
     observe_gainResource = _gainResource
