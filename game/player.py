@@ -109,9 +109,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
 
     def observe_trapped(self, playSound = True):
         if self.resources:
-            for i in range(self.resources, 0, -1):
-                self.breakArmor(self.sides, i)
-            self.resources = 0
+            self.setResources(0)
         else:
             self.sides = 0
 
@@ -148,7 +146,9 @@ class Player(pb.Cacheable, pb.RemoteCache):
             self.sides += 1
             #TODO should probably play some kind of sound here
         elif self.resources < self.sides:
-            self.resources += 1
+            
+            #self.resources += 1
+            self.setResources(self.resources + 1)
             
             actuallyGainResource = True
             
@@ -160,7 +160,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
             animation.start(12).addCallback(lambda ign: self.events.remove(animation))
             self.events.add(animation)
             
-            self.armor[self.resources] = self.images["Armor", self.sides, self.resources]
+            #self.armor[self.resources] = self.images["Armor", self.sides, self.resources]
             
             playResourceFullOk = True
         
@@ -191,15 +191,19 @@ class Player(pb.Cacheable, pb.RemoteCache):
         else:
             self.team = 1
         
-
+    def setResources(self, newAmount):        
+        self.resources = newAmount
+        self.armor.clear()
+        
+        for i in range(1,newAmount+1):
+            self.armor[i] = self.images["Armor", self.sides, i]
+        
     def _loseResource(self, playSound = True):
         if self.resources:
             if self.building:
                 infiniteResources = False
                 if not infiniteResources:
-                    self.breakArmor(self.sides, self.resources)
-                    self.armor.pop(self.resources)
-                    self.resources -= 1
+                    self.setResources(self.resources - 1)
             
             if playSound:
                 #TODO building complete sounds should be played here
@@ -299,14 +303,9 @@ class Player(pb.Cacheable, pb.RemoteCache):
     
     observe_updatePosition = _updatePosition
 
-    def breakArmor(self, sides, resources):
-        # TODO nothing to do here?
-        pass
-
     def _hit(self):
         if self.resources:
-            self.breakArmor(self.sides, self.resources)
-            self.resources -= 1
+            self.setResources(self.resources - 1)
         else:
             animation = self.images["LevelUp"].copy()
             animation.startReversed(72).addCallback(lambda ign: self.topEvents.remove(animation))
@@ -320,7 +319,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
 
     def _levelUp(self):
         self.armor.clear()
-        self.resources = 0
+        self.setResources(0)
         self.sides += 1
 
         #animation = self.images["building upgraded"].copy()
