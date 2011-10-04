@@ -17,10 +17,16 @@ class Environment(pb.Cacheable, pb.RemoteCache):
     def createPlayer(self, team):
         player = Player()
         player.team = team
+        
+        # I have no idea if this is being set somewhere else
+        if self.team == None:
+            self.team = team
+            
         playerId = id(player)
         self.players[playerId] = player
         for o in self.observers: o.callRemote('createPlayer', playerId, player)
         return player
+    
     def observe_createPlayer(self, playerId, player):
         self.players[playerId] = player
 
@@ -45,6 +51,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         building.onDestroyed.addCallback(self.destroyBuilding)
         for o in self.observers: o.callRemote('createBuilding', bid, building)
         return building
+    
     def observe_createBuilding(self, bid, building):
         self.buildings[bid] = building
 
@@ -56,6 +63,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         del self.buildings[bid]
 
     def attack(self, player):
+        print "my score: " + str(self.calculateScore(self.team))
         distance = 3
         player.attack()
         for p in self.players.itervalues():
@@ -67,10 +75,11 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
     def startAttacking(self, player):
         player.setAction("Attacking", LoopingCall(self.attack, player))
-        player.action.start(2, now=False)
+        player.action.start(2, now=True)
 
     def startBuilding(self, player):
-        if not player.building:
+        hadNoBuilding = not player.building
+        if hadNoBuilding:
             newBuildingPosition = player.position
             
             newBuildingPosition.x = newBuildingPosition.x + 2 #TODO this will likely have to change to x for the phone
@@ -85,7 +94,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         else:
             action = "Building"
         player.setAction(action, LoopingCall(player.building.build, player))
-        player.action.start(2, now=False)
+        player.action.start(2, now=hadNoBuilding)
 
     def finishAction(self, player):
         if player.action:
@@ -161,6 +170,37 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         self.observers.remove(observer)
     
     def switchTeams(self, player):
+        self.team = self.getOpponentTeam()
         player.switchTeams()
+        
+    def getOpponentTeam(self):
+        if self.team == 1:
+            return 2
+        else: 
+            return 1
+        
+    def calculateScore(self, team=None):
+        print "score =================================="
+        if team == None:
+            team = self.player.team
+        print "=== Our Team: " + str(team)    
+        score = 0;
+        for playerId in self.players:
+            #score = score + 100
+            player = self.players[playerId]
+            #print "player team: " + str(player.team)
+            if player.team == team:
+                score = score + player.sides
+                score = score + player.resources
+        
+        for buildingId in self.buildings:
+            #score = score + 10000
+            building = self.buildings[buildingId]
+            #print "bildg team: " + str(building.team)
+            if building.team == team:
+                score = score + building.sides
+                score = score + building.resources
+                
+        return score
 
 pb.setUnjellyableForClass(Environment, Environment)

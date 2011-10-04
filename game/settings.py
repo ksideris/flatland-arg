@@ -5,6 +5,8 @@ class Images:
         self.images = dict()
 
         self.images["resource_pool"] = Image(dir.child("resource").child("resource_pool.png"))
+        self.images["resource_pool_zone"] = Image(dir.child("resource").child("resource_zone.png"))
+        
         self.images["background"] = Image(dir.child("other").child("bg_tile.png"))
         self.images["Attack"] = Animation(dir.child("players").child("attack").child("attack%04d.png"))
         self.images["LevelUp"] = Animation(dir.child("effects").child("player_lvlup").child("player_lvlup%04d.png"))

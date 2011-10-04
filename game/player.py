@@ -195,7 +195,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.resources = newAmount
         self.armor.clear()
         
-        for i in range(1,newAmount+1):
+        for i in range(1, newAmount + 1):
             self.armor[i] = self.images["Armor", self.sides, i]
         
     def _loseResource(self, playSound = True):
@@ -230,12 +230,15 @@ class Player(pb.Cacheable, pb.RemoteCache):
     observe_loseResource = _loseResource
 
     def _attack(self):
+        
         animation = self.images["Attack"].copy()
         animation.start(12).addCallback(lambda ign: self.events.remove(animation))
         self.events.add(animation)
+    
     def attack(self):
         self._attack()
         for o in self.observers: o.callRemote('attack')
+    
     observe_attack = _attack
 
     def _updatePosition(self, position, building, playSound=True):
@@ -244,6 +247,10 @@ class Player(pb.Cacheable, pb.RemoteCache):
         def buildingReset():
             self.building = None
             self._buildingReset = None
+#            if hasattr(self.building, 'sides'):# and self.building.sides == 0:# and self.building.resources == 0:
+#                print "aborted"
+#                self.building.onDestroyed.callback(self.building)
+            
         if playSound:
             if self.scanning.isScanning():
                 self.scanFadeOutOk = True 
@@ -523,6 +530,7 @@ class ResourcePool(pb.Copyable, pb.RemoteCopy):
         pass
 
     def paint(self, view, position):
+        view.images.images["resource_pool_zone"].draw(view.screen, position)
         view.images.images["resource_pool"].draw(view.screen, position)
 
 pb.setUnjellyableForClass(ResourcePool, ResourcePool)
