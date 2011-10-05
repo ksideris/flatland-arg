@@ -1,7 +1,12 @@
+import pygame
 from vector import Vector2D
 from game.player import Player, ResourcePool, Building
 from twisted.spread import pb
 from twisted.internet.task import LoopingCall
+from twisted.internet import reactor
+import time
+
+GAME_DURATION = 15#15 seconds #15 * 60 # 15 minutes
 
 class Environment(pb.Cacheable, pb.RemoteCache):
     def __init__(self):
@@ -13,14 +18,37 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         self.height = 48.0#80.0
         self.buildings = {}
         self.team = None
+        self.endTime = None
+        self.gameOver = False
+        
+    def startGame(self):
+        # I'm not sure that this is best way to do this,
+        # but by using absolute times, coordination is
+        # simpler
+        endTime = int(time.time()) + GAME_DURATION
+        self.observe_startGame(endTime)
+        reactor.callLater(GAME_DURATION, self.endGame)
+        for o in self.observers: o.callRemote('startGame', self.endTime)
+    
+    def observe_startGame(self, endTime):
+        self.gameOver = False
+        self.endTime = endTime
+
+    def endGame(self):
+        self.observe_endGame()
+        for o in self.observers: o.callRemote('endGame')
+    
+    def observe_endGame(self):
+        self.gameOver = True
+        self.endTime = int(time.time())
 
     def createPlayer(self, team):
         player = Player()
         player.team = team
         
         # I have no idea if this is being set somewhere else
-        if self.team == None:
-            self.team = team
+        #if self.team == None:
+        #    self.team = team
             
         playerId = id(player)
         self.players[playerId] = player
@@ -158,6 +186,72 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             if p.self and p.building:
                 p.building.drawToolTip(view, "Build", p.team)
             p.paint(view, view.screenCoord(p.position), self.team == p.team, self.isVisible(p))
+            
+        # Draw the score:
+        #TODO color appropriately
+        font = pygame.font.Font("data/Deutsch.ttf", 35)
+        #font = pygame.font.Font(None, 45)
+        text = font.render(str(self.calculateScore(self.team)), True, (0,255,255))
+        text = pygame.transform.rotate(text, 90)
+        textrect = text.get_rect(right =735, bottom = 450)   
+        view.screen.blit(text,textrect)
+        
+        text = font.render(str(self.calculateScore(self.getOpponentTeam())), True, (255, 0, 255))
+        text = pygame.transform.rotate(text, 90)
+        textrect = text.get_rect(right = 775, bottom = 450)   
+        view.screen.blit(text,textrect)
+        
+        
+        # ======================================================================
+        #Draw the time remaining
+        minRemaining = 15
+        secRemaining = 0
+        if self.endTime:
+            secRemaining = max(self.endTime - int(time.time()), 0)
+            minRemaining = secRemaining / 60
+            secRemaining = secRemaining % 60
+            
+        secStr = str(secRemaining)
+        if secRemaining <= 9: secStr = "0" + secStr
+        
+        minStr = str(minRemaining)
+        if minRemaining <= 9: minStr = "0" + minStr
+        
+        font = pygame.font.Font("data/Deutsch.ttf", 35)
+        text = font.render(minStr + ":" + secStr, True, (255, 255, 255))
+        text = pygame.transform.rotate(text, 90)
+        textrect = text.get_rect(left = 15, bottom = 450)   
+        view.screen.blit(text,textrect)
+        
+        # ======================================================================
+        # draw end game message, as appropriate
+        if self.gameOver:
+            endGameMessage = ""
+            if self.team:
+                scoreDifference = self.calculateScore(self.team) > self.calculateScore(self.getOpponentTeam())
+                if scoreDifference > 0:
+                    endGameMessage = "YOU WIN!"
+                elif scoreDifference < 0:
+                    endGameMessage = "YOU LOSE!"
+                else:
+                  endGameMessage = "YOU BOTH LOSE!"
+                  
+            else:
+                scoreDifference = self.calculateScore(1) - self.calculateScore(2)
+                if scoreDifference > 0:
+                    endGameMessage = "TEAM 1 WINS"
+                elif scoreDifference < 0:
+                    endGameMessage = "TEAM 2 WINS"
+                else:
+                    endGameMessage = "DRAW"
+                
+                
+            font = pygame.font.Font("data/Deutsch.ttf", 70)
+            #font = pygame.font.Font(None, 45)
+            text = font.render(endGameMessage, True, (255,255,255))
+            text = pygame.transform.rotate(text, 90)
+            textrect = text.get_rect(centery =240, centerx = 350)   
+            view.screen.blit(text,textrect)
 
     # pb.Cacheable stuff
     def getStateToCacheAndObserveFor(self, perspective, observer):
@@ -179,11 +273,11 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         else: 
             return 1
         
-    def calculateScore(self, team=None):
-        print "score =================================="
+    def calculateScore(self, team):
+        #print "score =================================="
         if team == None:
-            team = self.player.team
-        print "=== Our Team: " + str(team)    
+            team = self.team
+#        print "=== Our Team: " + str(team)    
         score = 0;
         for playerId in self.players:
             #score = score + 100
@@ -201,6 +295,6 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                 score = score + building.sides
                 score = score + building.resources
                 
-        return score
+        return score * 1000;
 
 pb.setUnjellyableForClass(Environment, Environment)

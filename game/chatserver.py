@@ -10,6 +10,7 @@ from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 from twisted.spread import pb
 from twisted.internet.protocol import DatagramProtocol
+from ServerKeyboardController import ServerController
 
 class GameRealm:
     implements(portal.IRealm)
@@ -89,6 +90,9 @@ view = Window(env)
 realm.environment = env
 view.start('Server')
 LoopingCall(lambda: pygame.event.pump()).start(0.03)
+
+controller = ServerController(realm, view)
+controller.go()
 
 tracker = TrackerPort()
 

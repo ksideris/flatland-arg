@@ -178,7 +178,6 @@ class Player(pb.Cacheable, pb.RemoteCache):
                     pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/Points Full.wav"))
 
     def gainResource(self):
-        print "team: " + str(self.team)
         self._gainResource(playSound = False)
 
         for o in self.observers: o.callRemote('gainResource')
