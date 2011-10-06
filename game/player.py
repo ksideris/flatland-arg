@@ -75,7 +75,6 @@ class Player(pb.Cacheable, pb.RemoteCache):
         
         #sound related state
         self.playingBuildingCompleteSound = False
-        self.actionName = None
         self.scanFadeOutOk = False
         self.stopBuildingChannelOk = True
         self.hadResources = False
@@ -126,10 +125,9 @@ class Player(pb.Cacheable, pb.RemoteCache):
     def setAction(self, remote, local):
         self.observe_setAction(remote)
         self.action = local
+        self.actionName = remote
         if (remote != "Mining" and remote != "Building"):
             pygame.mixer.Channel(7).stop()
-
-        self.actionName = remote
 
         for o in self.observers: o.callRemote('setAction', remote)
         
@@ -268,7 +266,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
         
         if building: 
             self.building = building
-            if self._buildingReset:
+            if self._buildingReset and hasattr(self._buildingReset, "cancel"):
                 self._buildingReset.cancel()
             self._buildingReset = reactor.callLater(1, buildingReset)
             
@@ -356,14 +354,15 @@ class Player(pb.Cacheable, pb.RemoteCache):
             image.draw(view.screen, position)
 
         if isVisible:
-            image = view.images.images["Player", (self.self, isTeammate), self.sides]
+            image = view.images.images["Player", self.team, self.sides]
             image.draw(view.screen, position)
             for image in self.topEvents:
                 image.draw(view.screen, position)
             if self.tooltip:
                 self.tooltip.draw(view.screen, position + Vector2D(0, -100))
-        else:
-            image = view.images.images["Enemy"]
+        else:   
+            image = view.images.images["Enemy", self.team]
+            #image.start(12)
             image.draw(view.screen, position)
             return
 
@@ -463,16 +462,16 @@ class Building(pb.Cacheable, pb.RemoteCache):
             return
 
         if self.sides >= 3:
-            view.images.images["Building Zone", self.sides, isTeammate].draw(view.screen, position)
+            view.images.images["Building Zone", self.sides, self.team].draw(view.screen, position)
 
         if self.upgradeAnim:
             self.upgradeAnim.draw(view.screen, position)
 
         if self.sides:
-            view.images.images["Building", self.sides, isTeammate].draw(view.screen, position)
-            view.images.images["BuildingHealth", isTeammate, self.sides, self.resources].draw(view.screen, position)
+            view.images.images["Building", self.sides, self.team].draw(view.screen, position)
+            view.images.images["BuildingHealth", self.team, self.sides, self.resources].draw(view.screen, position)
         else:
-            image = view.images.images["Building", self.resources, isTeammate].draw(view.screen, position)
+            image = view.images.images["Building", self.resources, self.team].draw(view.screen, position)
 
     def getStateToCacheAndObserveFor(self, perspective, observer):
         self.observers.append(observer)

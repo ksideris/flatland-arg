@@ -7,6 +7,7 @@ from twisted.internet import reactor
 import time
 
 GAME_DURATION = 15#15 seconds #15 * 60 # 15 minutes
+PRESUMED_LATENCY = 1
 
 class Environment(pb.Cacheable, pb.RemoteCache):
     def __init__(self):
@@ -26,20 +27,30 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         # I'm not sure that this is best way to do this,
         # but by using absolute times, coordination is
         # simpler
-        self.observe_startGame()
+        self.observe_startGame(latencyEstimate=0)
         reactor.callLater(GAME_DURATION, self.endGame)
         for o in self.observers: o.callRemote('startGame')
     
-    def observe_startGame(self):
-        self.endTime = int(time.time()) + GAME_DURATION
+    def observe_startGame(self, latencyEstimate=PRESUMED_LATENCY):
+        self.observe_updateTimeRemaining(GAME_DURATION, 0)
         self.gameOver = False
 
+    def setPreGame(self):
+        self.observe_setPreGame()
+        for o in self.observers: o.callRemote('setPreGame')
+        
+    def observe_setPreGame(self):
+        self.endTime = None
+
+    
     def updateTimeRemaining(self, timeRemaining):
-        pass
+        self.observe_updateTimeRemaining(timeRemaining, latencyEstimate=0)
+        for o in self.observers: o.callRemote('updateTimeRemaining')
 
-    def observe_updateTimeRemaining(self, timeRemaining):
-        pass
+    def observe_updateTimeRemaining(self, timeRemaining, latencyEstimate=PRESUMED_LATENCY):
+        self.endTime = int(time.time()) + timeRemaining - latencyEstimate
 
+    
     def endGame(self):
         self.observe_endGame()
         for o in self.observers: o.callRemote('endGame')
@@ -97,30 +108,26 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         del self.buildings[bid]
 
     def attack(self, player):
-        distance = 3
-        player.attack()
-        for p in self.players.itervalues():
-            if (p.team != player.team) and (p.position - player.position) < distance:
-                p.hit()
-        for b in self.buildings.values():
-            if (b.position - player.position) < distance:
-                b.hit()
+        if self.attackOk:
+            self.attackOk = False
+            distance = 3
+            player.attack()
+            for p in self.players.itervalues():
+                if (p.team != player.team) and (p.position - player.position) < distance:
+                    p.hit()
+            for b in self.buildings.values():
+                if (b.position - player.position) < distance:
+                    b.hit()
 
     def makeAttackOk(self):
         self.attackOk = True
 
     def startAttacking(self, player):
-        print player.actionName
-        if self.attackOk:
-            self.attacking = True
-            print("START ATTACK")
-            player.setAction("Attacking", LoopingCall(self.attack, player))
-            player.action.start(2, now=True)
-            self.attackOk = False
-            reactor.callLater(2, self.makeAttackOk)
+#        if player.action == None:
+#            player.setAction("Attacking", LoopingCall(self.attack, player))
+#            player.action.start(.1, now=True)
+        self.attack(player)
             
-        else:
-            print "I'm busy!"
 
     def startBuilding(self, player):
         hadNoBuilding = not player.building
@@ -145,6 +152,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         if player.action:
             player.action.stop()
             player.setAction(None, None)
+        self.attackOk = True
 
     def startUpgrading(self, player):
         for b in self.buildings.itervalues():

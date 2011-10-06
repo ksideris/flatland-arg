@@ -9,6 +9,7 @@ import sys
 
 
 from pygame import (K_s as START_GAME,
+                    K_r as RESET_GAME,
                     K_e as END_GAME,
                     K_ESCAPE as QUIT,
                     K_DOWN as MOVE_DOWN,
@@ -33,6 +34,8 @@ class ServerController(object):
             if (event.type == pygame.KEYDOWN):
                 if (event.key == START_GAME):
                     self.realm.environment.startGame()
+                elif (event.key == RESET_GAME):
+                    self.realm.environment.setPreGame()
     
     def go(self):
         self.previousTime = pygame.time.get_ticks()
