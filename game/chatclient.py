@@ -14,7 +14,7 @@ from twisted.internet.protocol import DatagramProtocol
 import pygame
 import os
 
-if os.environ.get("FARG_INPUT") == "wand":
+if os.environ.get("FARG_INPUT") == "wand" :
     from game.actions_wand import PlayerController
 else:
     from game.actions_keyboard import PlayerController

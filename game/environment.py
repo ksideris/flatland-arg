@@ -20,19 +20,25 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         self.team = None
         self.endTime = None
         self.gameOver = False
+        self.attackOk = True
         
     def startGame(self):
         # I'm not sure that this is best way to do this,
         # but by using absolute times, coordination is
         # simpler
-        endTime = int(time.time()) + GAME_DURATION
-        self.observe_startGame(endTime)
+        self.observe_startGame()
         reactor.callLater(GAME_DURATION, self.endGame)
-        for o in self.observers: o.callRemote('startGame', self.endTime)
+        for o in self.observers: o.callRemote('startGame')
     
-    def observe_startGame(self, endTime):
+    def observe_startGame(self):
+        self.endTime = int(time.time()) + GAME_DURATION
         self.gameOver = False
-        self.endTime = endTime
+
+    def updateTimeRemaining(self, timeRemaining):
+        pass
+
+    def observe_updateTimeRemaining(self, timeRemaining):
+        pass
 
     def endGame(self):
         self.observe_endGame()
@@ -91,7 +97,6 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         del self.buildings[bid]
 
     def attack(self, player):
-        print "my score: " + str(self.calculateScore(self.team))
         distance = 3
         player.attack()
         for p in self.players.itervalues():
@@ -101,9 +106,21 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             if (b.position - player.position) < distance:
                 b.hit()
 
+    def makeAttackOk(self):
+        self.attackOk = True
+
     def startAttacking(self, player):
-        player.setAction("Attacking", LoopingCall(self.attack, player))
-        player.action.start(2, now=True)
+        print player.actionName
+        if self.attackOk:
+            self.attacking = True
+            print("START ATTACK")
+            player.setAction("Attacking", LoopingCall(self.attack, player))
+            player.action.start(2, now=True)
+            self.attackOk = False
+            reactor.callLater(2, self.makeAttackOk)
+            
+        else:
+            print "I'm busy!"
 
     def startBuilding(self, player):
         hadNoBuilding = not player.building
@@ -193,12 +210,12 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         #font = pygame.font.Font(None, 45)
         text = font.render(str(self.calculateScore(self.team)), True, (0,255,255))
         text = pygame.transform.rotate(text, 90)
-        textrect = text.get_rect(right =735, bottom = 450)   
+        textrect = text.get_rect(right =735, bottom = 410)   
         view.screen.blit(text,textrect)
         
         text = font.render(str(self.calculateScore(self.getOpponentTeam())), True, (255, 0, 255))
         text = pygame.transform.rotate(text, 90)
-        textrect = text.get_rect(right = 775, bottom = 450)   
+        textrect = text.get_rect(right = 775, bottom = 410)   
         view.screen.blit(text,textrect)
         
         
@@ -220,7 +237,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         font = pygame.font.Font("data/Deutsch.ttf", 35)
         text = font.render(minStr + ":" + secStr, True, (255, 255, 255))
         text = pygame.transform.rotate(text, 90)
-        textrect = text.get_rect(left = 15, bottom = 450)   
+        textrect = text.get_rect(left = 15, bottom = 410)   
         view.screen.blit(text,textrect)
         
         # ======================================================================

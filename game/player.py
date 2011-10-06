@@ -71,6 +71,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self._buildingReset = None
         self.tooltip = None
         self.lastAction = None
+        self.attackFunc = None
         
         #sound related state
         self.playingBuildingCompleteSound = False
@@ -87,6 +88,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.actionName = None
         self.scanFadeOutOk = False
         self.stopBuildingChannelOk = True
+        self.attacking = False
 
     def _startScanning(self):
         self.scanning.start()
@@ -122,8 +124,8 @@ class Player(pb.Cacheable, pb.RemoteCache):
         for o in self.observers: o.callRemote('trapped')
 
     def setAction(self, remote, local):
+        self.observe_setAction(remote)
         self.action = local
-
         if (remote != "Mining" and remote != "Building"):
             pygame.mixer.Channel(7).stop()
 
@@ -132,10 +134,11 @@ class Player(pb.Cacheable, pb.RemoteCache):
         for o in self.observers: o.callRemote('setAction', remote)
         
     def observe_setAction(self, action):
-        self.actionName = action
         # TODO Tooltips no longer used?
         self.tooltip = None
         self.actionName = action
+        if action == None:
+            self.attacking = False
 
 
     def _gainResource(self, playSound = True):
@@ -229,7 +232,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
     observe_loseResource = _loseResource
 
     def _attack(self):
-        
+        self.attacking = True
         animation = self.images["Attack"].copy()
         animation.start(12).addCallback(lambda ign: self.events.remove(animation))
         self.events.add(animation)
