@@ -6,6 +6,40 @@ from vector import Vector2D
 from twisted.internet import reactor
 
 #This comment is still not important.
+sounds = dict()
+
+def _initSounds():
+#    pygame.mixer.init(frequency=16000)#, size=-8, channels=1)
+    sounds["trigger trap"] = pygame.mixer.Sound("data/sfx/alex_sfx/Trigger Trap.wav")
+    sounds["explosion"] = pygame.mixer.Sound("data/sfx/alex_sfx/Attack Hit.wav")
+    
+    sounds["attack"] = pygame.mixer.Sound("data/sfx/alex_sfx/attack.wav")
+    sounds["poly armor full"] = pygame.mixer.Sound("data/sfx/alex_sfx/Points Full.wav")
+    sounds["player upgrade"] = pygame.mixer.Sound("data/sfx/alex_sfx/You upgraded.wav")
+    
+    sounds["accept upgrade"] = pygame.mixer.Sound("data/sfx/alex_sfx/accept_upgrade.wav")
+    
+    sounds["gain poly armor"] = pygame.mixer.Sound("data/sfx/alex_sfx/gain resource.wav")
+    sounds["lose poly armor"] = pygame.mixer.Sound("data/sfx/alex_sfx/pay resource.wav")
+    sounds["poly armor depleted"] = pygame.mixer.Sound("data/sfx/alex_sfx/resources depleted.wav")
+
+    sounds["mining"] = pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).wav")
+
+    sounds["building",3] = pygame.mixer.Sound("data/sfx/alex_sfx/Building 3-sided.wav")
+    sounds["building",4] = pygame.mixer.Sound("data/sfx/alex_sfx/Building 4-sided.wav")
+    sounds["building",5] = pygame.mixer.Sound("data/sfx/alex_sfx/Building 5-sided.wav")
+
+    sounds["finish building",3] = pygame.mixer.Sound("data/sfx/alex_sfx/Finish 3-sided.wav")
+    sounds["finish building",4] = pygame.mixer.Sound("data/sfx/alex_sfx/Finish 4-sided.wav")
+    sounds["finish building",5] = pygame.mixer.Sound("data/sfx/alex_sfx/Finish 5-sided.wav")
+        
+    sounds["scanning"] = pygame.mixer.Sound("data/sfx/alex_sfx/Sweeping.wav")
+
+def getSound(strIdx, nIndex = None):
+    if not nIndex == None:
+        return sounds[strIdx, nIndex]
+    else:
+        return sounds[strIdx]
 
 class PlayerScan:
     def __init__(self):
@@ -40,7 +74,7 @@ class PlayerScan:
             else:
                 return self._radius * (1 - (dt / 5000.0))
         #return (math.log1p(min(1, (dt / 10000.0) / (math.e - 1))) * .9) + 0.1
-        return min(1, (dt / 1000.0)  * .9) + 0.1
+        return  2*(min(1, (dt / 1000.0)  * .9) + 0.1)
 
 
     def __nonzero__(self):
@@ -71,7 +105,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self._buildingReset = None
         self.tooltip = None
         self.lastAction = None
-        self.attackFunc = None
+        #self.sounds = None
         
         #sound related state
         self.playingBuildingCompleteSound = False
@@ -88,6 +122,41 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.scanFadeOutOk = False
         self.stopBuildingChannelOk = True
         self.attacking = False
+        self.miningAnimation = None
+        
+    def reset(self):
+        self.setResources(0)
+        self.sides = 3
+        
+#        self.resources = 0
+#        self.size = 1
+#        self.action = None
+#        self.upgradingAt = None
+#        self.events = set()
+#        self.topEvents = set()
+#        self.armor = dict()
+#        self.building = None
+#        self._buildingReset = None
+#        self.tooltip = None
+#        self.lastAction = None
+#        #self.sounds = None
+#        
+#        #sound related state
+#        self.playingBuildingCompleteSound = False
+#        self.scanFadeOutOk = False
+#        self.stopBuildingChannelOk = True
+#        self.hadResources = False
+#        #self.pointsFullPlayOk = True
+#        #self.sounds = dict()
+#        #self.sounds['Building 3-Sided'] = pygame.mixer.Sound("data/sfx/alex_sfx/Building 3-sided.wav")
+#
+#        #sound related state
+#        self.playingBuildingCompleteSound = False
+#        self.actionName = None
+#        self.scanFadeOutOk = False
+#        self.stopBuildingChannelOk = True
+#        self.attacking = False
+#        self.miningAnimation = None
 
     def _startScanning(self):
         self.scanning.start()
@@ -115,8 +184,8 @@ class Player(pb.Cacheable, pb.RemoteCache):
             self.sides = 0
 
         if (playSound):
-            pygame.mixer.Channel(6).play(pygame.mixer.Sound("data/sfx/alex_sfx/Trigger Trap.wav"))
-            pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/Attack Hit.wav"))
+            pygame.mixer.Channel(6).play(getSound("trigger trap"))
+            pygame.mixer.Channel(7).play(getSound("explosion"))
 
     def trapped(self):
         self.observe_trapped(playSound = False)
@@ -128,6 +197,13 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.actionName = remote
         if (remote != "Mining" and remote != "Building"):
             pygame.mixer.Channel(7).stop()
+        
+#        if(remote == "Mining"):
+#            self.miningAnimation = self.images["mining"].copy()
+#            self.miningAnimation.start()
+            #self.events.add(self.miningAnimation)
+            #self.miningAnimation.draw(view.screen, position)
+            
 
         for o in self.observers: o.callRemote('setAction', remote)
         
@@ -135,8 +211,6 @@ class Player(pb.Cacheable, pb.RemoteCache):
         # TODO Tooltips no longer used?
         self.tooltip = None
         self.actionName = action
-        if action == None:
-            self.attacking = False
 
 
     def _gainResource(self, playSound = True):
@@ -145,6 +219,11 @@ class Player(pb.Cacheable, pb.RemoteCache):
 
         if self.sides < 3:
             self.sides += 1
+            if playSound:
+                pygame.mixer.Channel(6).play(getSound("player upgrade"))
+                animation = self.images["player upgraded"].copy()
+                animation.start(12).addCallback(lambda ign: self.events.remove(animation))
+                self.events.add(animation)
             #TODO should probably play some kind of sound here
         elif self.resources < self.sides:
             
@@ -153,38 +232,39 @@ class Player(pb.Cacheable, pb.RemoteCache):
             
             actuallyGainResource = True
             
-            #animation = self.images["ArmorBreak", self.sides, self.resources].copy()
-            #animation.startReversed(24)
-            
-            animation = self.images["Generic_2"].copy()
-            #animation.setRotation("45")
-            animation.start(12).addCallback(lambda ign: self.events.remove(animation))
-            self.events.add(animation)
-            
-            #self.armor[self.resources] = self.images["Armor", self.sides, self.resources]
+            #animation = self.images["Generic_2"].copy()
+            #animation.start(12).addCallback(lambda ign: self.events.remove(animation))
+            #self.events.add(animation)
             
             playResourceFullOk = True
         
         if (playSound):
             if actuallyGainResource:
-                pygame.mixer.Channel(6).play(pygame.mixer.Sound("data/sfx/alex_sfx/gain resource.wav"))
+                #pygame.mixer.Channel(6).play(pygame.mixer.Sound("data/sfx/alex_sfx/gain resource.wav"))
+                pygame.mixer.Channel(6).play(getSound("gain poly armor"))
     
                 #It's possible if the sound changes, that restarting the mining sound will sound good
                 #pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).wav"))
+                pygame.mixer.Channel(7).play(getSound("mining"))
                 
             if self.resources == self.sides:
                 pygame.mixer.Channel(7).stop()
                 if (playResourceFullOk):
                     self.stopBuildingChannelOk = False
-                    pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/Points Full.wav"))
+                    pygame.mixer.Channel(5).play(getSound("poly armor full"))
 
     def gainResource(self):
         self._gainResource(playSound = False)
 
         for o in self.observers: o.callRemote('gainResource')
+    
     observe_gainResource = _gainResource
 
     def switchTeams(self):
+        self.observe_switchTeams()
+        for o in self.observers: o.callRemote('switchTeams')
+
+    def observe_switchTeams(self):
         #print "team: " + str(self.team)
         if self.team == 1:
             self.team = 2
@@ -210,33 +290,41 @@ class Player(pb.Cacheable, pb.RemoteCache):
                 if not self.building:
                     pygame.mixer.Channel(7).stop()
                 else:
-                    loseResourceSound = pygame.mixer.Sound("data/sfx/alex_sfx/pay resource.wav")
-                    loseResourceSound.set_volume(.6)
-                    pygame.mixer.Channel(6).play(loseResourceSound)
+                    pygame.mixer.Channel(6).play(getSound("lose poly armor"))
                     #print "the building : " + str(self.building.sides) + "-sided, resources =" + str(self.building.resources) + "\n"
                     if self.building.resources == 0:#self.building.nResourcesToUpgrade() == 1:#self.building.sides == self.building.resources and self.building.sides >= 3:
                         pygame.mixer.Channel(7).stop()
                         self.playingBuildingCompleteSound = True
-                        pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/Finish " + str(self.building.sides) + "-sided.wav"), 0)
+                        pygame.mixer.Channel(5).play(getSound("finish building", self.building.sides), 0)
                         #TODO should reset the building sound too
                     
                     elif self.resources == 0:
-                        pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/resources depleted.wav"),0)
+                        pygame.mixer.Channel(5).play(getSound("poly armor depleted"),0)
                 
+
+    def startAcceptUpgrade(self):
+        self.observe_startAcceptUpgrade(playSound = False)
+        for o in self.observers: o.callRemote('startAcceptUpgrade')
+
+    def observe_startAcceptUpgrade(self, playSound = True):
+        if playSound:
+            pygame.mixer.Channel(5).play(getSound("accept upgrade"))
 
     def loseResource(self):
         self._loseResource(playSound = False)
         for o in self.observers: o.callRemote('loseResource')
     observe_loseResource = _loseResource
 
-    def _attack(self):
+    def _attack(self, playSound=True):
         self.attacking = True
         animation = self.images["Attack"].copy()
-        animation.start(12).addCallback(lambda ign: self.events.remove(animation))
+        if playSound:
+            pygame.mixer.Channel(5).play(getSound("attack"))
+        animation.start(6).addCallback(lambda ign: self.events.remove(animation))
         self.events.add(animation)
     
     def attack(self):
-        self._attack()
+        self._attack(playSound=False)
         for o in self.observers: o.callRemote('attack')
     
     observe_attack = _attack
@@ -255,7 +343,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
             if self.scanning.isScanning():
                 self.scanFadeOutOk = True 
                 if not pygame.mixer.Channel(5).get_busy():
-                    pygame.mixer.Channel(5).play(pygame.mixer.Sound("data/sfx/alex_sfx/Sweeping.wav"),-1)
+                    pygame.mixer.Channel(5).play(getSound("scanning"),-1)
                 #else:
                 #    pygame.mixer.Channel(5).queue(pygame.mixer.Sound("data/sfx/alex_sfx/Sweeping.wav"))
             else:
@@ -291,16 +379,16 @@ class Player(pb.Cacheable, pb.RemoteCache):
                         if (not self.playingBuildingCompleteSound or not pygame.mixer.Channel(5).get_busy()):
                             self.playingBuildingCompleteSound = False
                             if not pygame.mixer.Channel(7).get_busy():
-                                pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/Building "+str(buildingSideCount)+"-sided.wav"))
+                                pygame.mixer.Channel(7).play(getSound("building", buildingSideCount))
                             else:
-                                pygame.mixer.Channel(7).queue(pygame.mixer.Sound("data/sfx/alex_sfx/Building "+str(buildingSideCount)+"-sided.wav"))                    
+                                pygame.mixer.Channel(7).queue(getSound("building", buildingSideCount))                    
                     
                 elif self.actionName == 'Mining':
-                    if self.resources < self.sides:
+                    if self.resources < self.sides or self.sides == 0:
                         if not pygame.mixer.Channel(7).get_busy():
-                            pygame.mixer.Channel(7).play(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).wav"))
+                            pygame.mixer.Channel(7).play(getSound("mining"))
                         else:
-                            pygame.mixer.Channel(7).queue(pygame.mixer.Sound("data/sfx/alex_sfx/In Resource Pool(loop).wav"))
+                            pygame.mixer.Channel(7).queue(getSound("mining"))
                 else:
                         pygame.mixer.Channel(7).stop()
 
@@ -354,6 +442,11 @@ class Player(pb.Cacheable, pb.RemoteCache):
             image.draw(view.screen, position)
 
         if isVisible:
+#            if self.miningAnimation == None:
+#                self.miningAnimation = self.images["mining"].copy()
+#                self.miningAnimation.start(12)
+#            self.miningAnimation.draw(view.screen, position)
+            
             image = view.images.images["Player", self.team, self.sides]
             image.draw(view.screen, position)
             for image in self.topEvents:

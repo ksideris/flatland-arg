@@ -1,5 +1,7 @@
 from animation import Image, Animation, LoopingAnimation
+import pygame.mixer
 
+        
 class Images:
     def __init__(self, dir):
         self.images = dict()
@@ -12,13 +14,17 @@ class Images:
         self.images["LevelUp"] = Animation(dir.child("effects").child("player_lvlup").child("player_lvlup%04d.png"))
 
         #TODO try to give these more descriptive names        
-        self.images["Generic_1"] = Animation(dir.child("effects").child("multi_use_action").child("multi_use_action%04d.png"))
-        self.images["Generic_2"] = Animation(dir.child("effects").child("multi_use_action2").child("multi_use_action2_%04d.png"))
+        #self.images["Generic_1"] = Animation(dir.child("effects").child("multi_use_action").child("multi_use_action%04d.png"))
+        #self.images["Generic_2"] = Animation(dir.child("effects").child("multi_use_action2").child("multi_use_action2_%04d.png"))
         self.images["player upgraded"] = Animation(dir.child("effects").child("player_lvlup").child("player_lvlup%04d.png"))
+        
+        #self.images["mining"] = LoopingAnimation(dir.child("effects").child("resource_gather").child("resource_gather%04d.png"))
 
         self._initPlayerImages(dir)
         self._initBuildingImages(dir)
         self._initArmorImages(dir)
+        
+
 
     def _initPlayerImages(self, dir):
         
@@ -29,7 +35,7 @@ class Images:
         sides = {0 : "dot", 1 : "line", 2 : "cross", 3 : "tri", 4 : "sqr", 5 : "pent", 6 : "hex"}
         
         #offsets = {"dot" : (0,0), "line" : (0,0), "cross" : (0,0), "tri" : (0,-5), "sqr" : (0,0), "pent" : (0,0), "hex" : (0,0)}
-        offsets = {0 : (0,0), 1 : (0,0), 2 : (0,0), 3 : (0,0), 3 : (0,-5), 4 : (0,0), 5 : (0,0), 6 : (0,0)}
+        offsets = {0 : (0,0), 1 : (0,0), 2 : (0,0), 3 : (0,0), 3 : (0,3), 4 : (0,0), 5 : (0,0), 6 : (0,0)}
         
         firstPerson = {1:"red", 2:"blue"}
         for p in firstPerson:
@@ -48,7 +54,8 @@ class Images:
 
         teammate = {1 : "_red", 2 : "_blue"}
         sides = {3 : "trap", 4 : "sentry", 5 : "polyfactory"}
-        offsets = {3 : (0, 30), 4 : (0, 55), 5 : (0, 80)}
+        healthOffsets = {3 : (0, -30 - 20), 4 : (0, -55 - 25), 5 : (0, -80 - 35)}
+        buildingOffsets = {3 : (0, 10), 4 : (0, 0), 5 : (0, 15)}
         for t in teammate:
             self.images["Building", 1, t] = resource1
             self.images["Building", 2, t] = resource2
@@ -58,7 +65,7 @@ class Images:
                 pathBuilder = pathBuilder.child(sides[s])
                 pathBuilder = pathBuilder.child("%s_buildings" % (sides[s]))
                 pathBuilder = pathBuilder.child("%s%s.png" % (sides[s], teammate[t]))
-                self.images["Building", s, t] = Image(pathBuilder)
+                self.images["Building", s, t] = Image(pathBuilder, buildingOffsets[s])
 
                 pathBuilder = buildingsDir
                 pathBuilder = pathBuilder.child(sides[s])
@@ -74,7 +81,7 @@ class Images:
                 
                 for resources in range(0, s + 1):
                     armorPath = pathBuilder.child("%s_armor%s%02d.png" % (sides[s], teammate[t], resources))
-                    self.images["BuildingHealth", t, s, resources] = Image(armorPath, offsets[s])
+                    self.images["BuildingHealth", t, s, resources] = Image(armorPath, healthOffsets[s])
 
         self.images["TrapExplosion"] = Animation(dir.child("effects").child("explosion").child("explosion%04d.png"))
         self.images["building upgraded"] = Animation(dir.child("effects").child("build_effect").child("build_effect%04d.png"))

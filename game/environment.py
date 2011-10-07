@@ -22,25 +22,44 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         self.endTime = None
         self.gameOver = False
         self.attackOk = True
-        
+        self.lightOn = True
+    
+    def resetGame(self):
+        #pass
+        self.buildings = {}
+        for p in self.players:
+            self.players[p].reset()
+    
+    def _turnOnLight(self):
+        self.lightOn = True
+    
+    def observe_blinkLight(self):
+        self.lightOn = False
+        reactor.callLater(.5, self._turnOnLight)
+    
     def startGame(self):
         # I'm not sure that this is best way to do this,
         # but by using absolute times, coordination is
         # simpler
         self.observe_startGame(latencyEstimate=0)
         reactor.callLater(GAME_DURATION, self.endGame)
-        for o in self.observers: o.callRemote('startGame')
-    
+        for o in self.observers: 
+            o.callRemote('startGame')
+
     def observe_startGame(self, latencyEstimate=PRESUMED_LATENCY):
+        print("start")
         self.observe_updateTimeRemaining(GAME_DURATION, 0)
+        self.resetGame()
         self.gameOver = False
 
     def setPreGame(self):
+        for o in self.observers: o.callRemote('blinkLight')
         self.observe_setPreGame()
         for o in self.observers: o.callRemote('setPreGame')
         
     def observe_setPreGame(self):
         self.endTime = None
+        self.gameOver = False
 
     
     def updateTimeRemaining(self, timeRemaining):
@@ -70,6 +89,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         playerId = id(player)
         self.players[playerId] = player
         for o in self.observers: o.callRemote('createPlayer', playerId, player)
+        #player.sounds = self.sounds
         return player
     
     def observe_createPlayer(self, playerId, player):
@@ -108,25 +128,28 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         del self.buildings[bid]
 
     def attack(self, player):
-        if self.attackOk:
-            self.attackOk = False
-            distance = 3
-            player.attack()
-            for p in self.players.itervalues():
-                if (p.team != player.team) and (p.position - player.position) < distance:
-                    p.hit()
-            for b in self.buildings.values():
-                if (b.position - player.position) < distance:
-                    b.hit()
+        #if self.attackOk:
+        self.attackOk = False
+        reactor.callLater(1.5, self.makeAttackOk)
+        distance = 3
+        player.attack()
+        for p in self.players.itervalues():
+            if (p.team != player.team) and (p.position - player.position) < distance:
+                p.hit()
+        for b in self.buildings.values():
+            if (b.position - player.position) < distance:
+                b.hit()
 
     def makeAttackOk(self):
         self.attackOk = True
 
     def startAttacking(self, player):
 #        if player.action == None:
-#            player.setAction("Attacking", LoopingCall(self.attack, player))
-#            player.action.start(.1, now=True)
-        self.attack(player)
+        player.setAction("Attacking", LoopingCall(self.attack, player))
+        player.action.start(1.5, now=self.attackOk)
+        self.attackOk = False
+            
+        #self.attack(player)
             
 
     def startBuilding(self, player):
@@ -134,7 +157,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         if hadNoBuilding:
             newBuildingPosition = player.position
             
-            newBuildingPosition.x = newBuildingPosition.x + 2 #TODO this will likely have to change to x for the phone
+            newBuildingPosition.x = newBuildingPosition.x - 2 #TODO this will likely have to change to x for the phone
             
             building = self.createBuilding(player.team, newBuildingPosition)
             if building:
@@ -143,6 +166,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                 return
         if player.building == self.rp:
             action = "Mining"
+            hadNoBuilding = False
         else:
             action = "Building"
         player.setAction(action, LoopingCall(player.building.build, player))
@@ -152,9 +176,9 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         if player.action:
             player.action.stop()
             player.setAction(None, None)
-        self.attackOk = True
 
     def startUpgrading(self, player):
+        player.startAcceptUpgrade()
         for b in self.buildings.itervalues():
             if b.isPolyFactory() and (b.team == player.team) and (b.position - player.position) < 3 and not b.upgrading:
                 b.upgrading = player
@@ -217,12 +241,12 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         font = pygame.font.Font("data/Deutsch.ttf", 35)
         #font = pygame.font.Font(None, 45)
         text = font.render(str(self.calculateScore(self.team)), True, (0,255,255))
-        text = pygame.transform.rotate(text, 90)
+        text = pygame.transform.rotate(text, 270)
         textrect = text.get_rect(right =735, bottom = 410)   
         view.screen.blit(text,textrect)
         
         text = font.render(str(self.calculateScore(self.getOpponentTeam())), True, (255, 0, 255))
-        text = pygame.transform.rotate(text, 90)
+        text = pygame.transform.rotate(text, 270)
         textrect = text.get_rect(right = 775, bottom = 410)   
         view.screen.blit(text,textrect)
         
@@ -244,7 +268,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         
         font = pygame.font.Font("data/Deutsch.ttf", 35)
         text = font.render(minStr + ":" + secStr, True, (255, 255, 255))
-        text = pygame.transform.rotate(text, 90)
+        text = pygame.transform.rotate(text, 270)
         textrect = text.get_rect(left = 15, bottom = 410)   
         view.screen.blit(text,textrect)
         
@@ -259,24 +283,42 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                 elif scoreDifference < 0:
                     endGameMessage = "YOU LOSE!"
                 else:
-                  endGameMessage = "YOU BOTH LOSE!"
+                  endGameMessage = "DRAW!"
                   
             else:
                 scoreDifference = self.calculateScore(1) - self.calculateScore(2)
                 if scoreDifference > 0:
-                    endGameMessage = "TEAM 1 WINS"
+                    endGameMessage = "RED WINS!"
                 elif scoreDifference < 0:
-                    endGameMessage = "TEAM 2 WINS"
+                    endGameMessage = "BLUE WINS!"
                 else:
-                    endGameMessage = "DRAW"
+                    endGameMessage = "DRAW!"
                 
                 
             font = pygame.font.Font("data/Deutsch.ttf", 70)
             #font = pygame.font.Font(None, 45)
             text = font.render(endGameMessage, True, (255,255,255))
-            text = pygame.transform.rotate(text, 90)
-            textrect = text.get_rect(centery =240, centerx = 350)   
+            text = pygame.transform.rotate(text, 270)
+            textrect = text.get_rect(centery =240, centerx = 350)
             view.screen.blit(text,textrect)
+            
+        # ======================================================================
+        # draw draw white square for photo sensor
+        
+        sqrSz = 75
+        
+        if not self.team == None:
+            sensRect = pygame.Rect(0, 0, sqrSz + 5, sqrSz + 10)
+            sensRect.right = 800
+            sensRect.centery = 240
+            pygame.draw.rect(view.screen, (0,0,0), sensRect)
+            
+            if self.lightOn:
+                sensRect = pygame.Rect(0,0,sqrSz,sqrSz)
+                sensRect.right = 800
+                sensRect.centery = 240
+                pygame.draw.rect(view.screen, (255,255,255), sensRect)
+
 
     # pb.Cacheable stuff
     def getStateToCacheAndObserveFor(self, perspective, observer):

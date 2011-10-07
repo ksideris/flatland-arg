@@ -9,7 +9,7 @@ rotateForTablet = True
 def _loadImage(path):
     image = pygame.image.load(path)
     if rotateForTablet:
-        image = pygame.transform.rotate(image, 90)
+        image = pygame.transform.rotate(image, -90)
         
     # TODO Are all of our images alpha'd now?
     if True:
@@ -117,3 +117,9 @@ class LoopingAnimation(Animation):
     def start(self, fps):
         self._loopingCall = LoopingCall(self._nextImage, itertools.cycle(self._images))
         return self._loopingCall.start(1.0 / fps)
+    
+    def _nextImage(self, iterator):
+        try:
+            self._image = iterator.next()
+        except StopIteration:
+            self.stop()

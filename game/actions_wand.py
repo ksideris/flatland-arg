@@ -16,12 +16,17 @@ import accelreader
 import pickle
 from copy import deepcopy
 
-
 # TODO: Can we have a keymap file?
 from pygame import (K_a as ATTACK,
                     K_s as SCAN,
                     K_d as BUILD,
                     K_w as UPGRADE,
+                    
+                    K_DOWN as MOVE_DOWN,
+                    K_UP as MOVE_UP,
+                    K_LEFT as MOVE_LEFT,
+                    K_RIGHT as MOVE_RIGHT,
+                    
                     K_ESCAPE as QUIT)
 
 from game.vector import Vector2D
@@ -64,6 +69,11 @@ class PlayerController(object):
         self._ser = accelreader.AccelReader()
         
         self.accelerometerPollFunc = None
+        
+        self._movingUp = False
+        self._movingDown = False
+        self._movingLeft = False
+        self._movingRight = False
 
 
 
@@ -89,6 +99,31 @@ class PlayerController(object):
         else:
             #self.position += (dt * self.speed) * direction.norm()
             pass
+        
+        #=======================================================================
+        directionX = 0
+        directionY = 0
+        
+        if (self._movingUp):
+            directionY = -1
+        elif self._movingDown:
+            directionY = 1
+            
+        if (self._movingLeft):
+            directionX = -1
+        elif self._movingRight:
+            directionX = 1
+        
+        direction = Vector2D(directionX, directionY)#destination - self.position
+        
+        #if direction < (self.speed * dt):
+        #    self.position = destination
+        #else:
+        #    self.position += (dt * self.speed) * direction.norm()
+        if directionX != 0 or directionY != 0:
+            self.position += (dt * self.speed) * direction.norm()
+        #=======================================================================
+    
         self.perspective.callRemote('updatePosition', self.position)
         self.view.setCenter(self.position)
 
@@ -125,7 +160,7 @@ class PlayerController(object):
         avg = [0, 0, 0]
         lastOne = [0, 0, 0]
         nChecks = 0
-        nCycles = 150
+        nCycles = 75
     
         for i in range(0, nCycles):
             data = self._readSerial()#reader.get_pos()
@@ -142,6 +177,7 @@ class PlayerController(object):
                 lastOne[i] = data[i]
                 
             nChecks = (nChecks + 1) % nCycles
+            pygame.time.wait(10)
             
         
         #=======================================================================
@@ -161,13 +197,17 @@ class PlayerController(object):
         if self._currentAction == None:
             #check for the upgrading gesture (static)
             if signlessAvg.index(max(signlessAvg)) == 0 and avg[0] > 0 and not movingTooMuchForUpgrade:
+                print("upgrade")
                 self._startedAction(UPGRADE)
             #check for dynamic gestures
             elif stormiestDimension == 0:
+                print("attack")
                 self._startedAction(ATTACK)
             elif stormiestDimension == 1:
+                print("scan")
                 self._startedAction(SCAN)
             elif stormiestDimension == 2:
+                print("build")
                 self._startedAction(BUILD)
         
         # ===== print totals ====== 
@@ -186,8 +226,9 @@ class PlayerController(object):
             return 1
 
     def startGestureListen(self):
-        self.accelerometerPollFunc = LoopingCall(self.pollAccelerometer)
-        self.accelerometerPollFunc.start(.65, now=True)
+        #self.accelerometerPollFunc = LoopingCall(self.pollAccelerometer)
+        #self.accelerometerPollFunc.start(.3, now=True)
+        self.pollAccelerometer()
         #don't start immediately because people tend not to start flailing until *after* they press the screen 
 
     def stopGestureListen(self):
@@ -217,6 +258,12 @@ class PlayerController(object):
             elif event.type == pygame.MOUSEBUTTONUP:
                 self._serialData[self.BUTTON] = 0
                 self.stopGestureListen()
+            
+            
+            if (event.type == pygame.KEYDOWN):
+                self.motionKeyPress(event.key)
+            elif (event.type == pygame.KEYUP):
+                self.motionKeyRelease(event.key)
         
         #buttons = pygame.mouse.get_pressed()
         #self._serialData[self.BUTTON] = buttons[0]
@@ -327,3 +374,33 @@ class PlayerController(object):
             return pickle.load(f)
         finally:
             f.close()
+            
+    def motionKeyPress(self, key):
+        if key == MOVE_UP:
+            self._movingUp = True
+        
+        if key == MOVE_DOWN:
+            self._movingDown = True
+            
+        if key == MOVE_LEFT:
+            self._movingLeft = True
+        
+        if key == MOVE_RIGHT:
+            self._movingRight = True
+
+
+    def motionKeyRelease(self, key):
+        if key == MOVE_UP:
+            self._movingUp = False
+        
+        if key == MOVE_DOWN:
+            self._movingDown = False
+            
+        if key == MOVE_LEFT:
+            self._movingLeft = False
+        
+        if key == MOVE_RIGHT:
+            self._movingRight = False
+            
+    def isMotionKey(self, key):
+        return key == MOVE_UP or key == MOVE_DOWN or key == MOVE_LEFT or key == MOVE_RIGHT
