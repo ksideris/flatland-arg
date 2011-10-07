@@ -11,6 +11,7 @@ from twisted.internet import reactor
 from twisted.spread import pb
 from twisted.internet.protocol import DatagramProtocol
 from ServerKeyboardController import ServerController
+from vector import Vector2D
 
 MAX_DISTANCE2 = 100
 MAX_SPEED = 10
@@ -38,7 +39,7 @@ class GameAvatar(pb.Avatar):
     def __init__(self, environment, team):
         self.environment = environment
         self.player = self.environment.createPlayer(team)
-        tracker_factory.client.addPlayer(self.player)
+        tm.addPlayer(self.player)
     def disconnect(self):
         self.environment.removePlayer(self.player)
     def perspective_startAttacking(self):
@@ -90,7 +91,7 @@ import cPickle
 
 class PlayerBlob:
     def __init__(self, player):
-        self.id = id
+        self.player = player
         self.lights = []
         self.x = -1
         self.y = -1
@@ -111,15 +112,15 @@ class PlayerBlob:
             self.updatePosition()
 
     def _updatePlayer(self):
-        pass
-
         startX = self.player.position.x
         startY = self.player.position.y
 
         dx = self.x - startX
         dy = self.y - startY
 
-        self.environment.updatePlayerPosition(self.player, Vector2D(startX + dx / 2, startY + dy / 2))
+        env.updatePlayerPosition(self.player, Vector2D(startX + dx / 2, startY + dy / 2))
+
+        print (startX, startY)
 
     def updatePosition(self):
         x = 0
@@ -174,21 +175,14 @@ class Light:
 
 import random
 
-class TrackRecv(LineReceiver):
+class TrackMaster:
     def __init__(self):
         self.numPlayers = 2;
 
         self.players = []
-        for i in range(self.numPlayers):
-            self.players.append(PlayerBlob(i))
-
-        self.blinkingPlayer = self.players[0]
 
         self.lights = {}
-
-    def connectionMade(self):
-        print "connected"
-        self.factory.client = self
+        print "init"
 
     def findNearestPlayer(self, light):
         min = None
@@ -225,8 +219,12 @@ class TrackRecv(LineReceiver):
             light = Light(point)
             self.lights[point['id']] = light
 
-            light.setPlayer(self.blinkingPlayer)
-            self.blinkNextPlayer()
+            # Other
+            player = self.findNearestPlayer(light)
+            if player:
+                light.setPlayer(player)
+            #light.setPlayer(self.blinkingPlayer)
+            #self.blinkNextPlayer()
 
         elif point['type'] == 'mov':
             light = self.lights[point['id']]
@@ -238,12 +236,20 @@ class TrackRecv(LineReceiver):
             # unkown, do not process
             return
 
-    def lineReceived(self, line):
-        self.process(cPickle.loads(line))
-
     def addPlayer(self, player):
-        pass
+        self.players.append(PlayerBlob(player))
 
+        self.blinkingPlayer = player
+
+
+class TrackRecv(LineReceiver):
+    def lineReceived(self, line):
+        point = cPickle.loads(line)
+        # TODO: Uniquify
+        point['id'] = str(point['id']) + '1'
+        tm.process(point)
+
+tm = TrackMaster()
 tracker_factory = protocol.ServerFactory()
 tracker_factory.protocol = TrackRecv
 reactor.listenTCP(1025, tracker_factory)
