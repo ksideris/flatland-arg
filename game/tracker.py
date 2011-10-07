@@ -20,7 +20,10 @@ import cPickle
 class TrackingClient(LineReceiver):
     def connectionMade(self):
         print "connected"
-        self.factory.client = self
+        self.factory.clients.append(self)
+
+    def connectionLost(self, raisin):
+        self.factory.clients.remove(self)
 
     def lineReceived(self, line):
         pass
@@ -42,15 +45,17 @@ class Tracker(FloatLayout):
         self._ready = False;
         self._corners = [];
 
-        self.factory = protocol.ClientFactory()
+        self.factory = protocol.ServerFactory()
         self.factory.protocol = TrackingClient
+        self.factory.clients = []
 
-        reactor.connectTCP("127.0.0.1", 1025, self.factory)
+        reactor.listenTCP(1025, self.factory)
 
     def send(self, data):
         msg = cPickle.dumps(data)
 
-        self.factory.client.send(msg)
+        for c in self.factory.clients:
+            c.send(msg)
 
     def _init_corner(self, touch):
         print len(self._corners)

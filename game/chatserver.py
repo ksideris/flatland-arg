@@ -39,7 +39,7 @@ class GameAvatar(pb.Avatar):
     def __init__(self, environment, team):
         self.environment = environment
         self.player = self.environment.createPlayer(team)
-        tm.addPlayer(self.player)
+        tm.addPlayer(self.environment)
     def disconnect(self):
         self.environment.removePlayer(self.player)
     def perspective_startAttacking(self):
@@ -59,7 +59,8 @@ class GameAvatar(pb.Avatar):
     def perspective_finishUpgrading(self):
         self.environment.finishUpgrading(self.player)
     def perspective_updatePosition(self, position):
-        self.environment.updatePlayerPosition(self.player, position)
+        #self.environment.updatePlayerPosition(self.player, position)
+        pass
     def perspective_getEnvironment(self):
         return self.environment
     def perspective_getTeam(self):
@@ -78,8 +79,6 @@ view = Window(env)
 realm.environment = env
 view.start('Server')
 LoopingCall(lambda: pygame.event.pump()).start(0.03)
-
-tracker = TrackerPort()
 
 portal = portal.Portal(realm, [checkers.AllowAnonymousAccess()])
 
@@ -121,7 +120,7 @@ class PlayerBlob:
         self.player.position = Vector2D(startX + dx / 2, startY + dy / 2)
         #env.updatePlayerPosition(self.player, Vector2D(startX + dx / 2, startY + dy / 2))
 
-        print (startX, startY)
+        #print (startX, startY)
 
     def updatePosition(self):
         x = 0
@@ -134,7 +133,7 @@ class PlayerBlob:
         self.x = x / len(self.lights)
         self.y = y / len(self.lights)
 
-        print (self.x, self.y)
+        #print (self.x, self.y)
 
     def blink(self):
         for light in self.lights:
@@ -244,16 +243,21 @@ class TrackMaster:
 
 
 class TrackRecv(LineReceiver):
+    def connectionMade(self):
+        print "connected"
+        self.fooie = random.randint(1, 100)
+
     def lineReceived(self, line):
         point = cPickle.loads(line)
         # TODO: Uniquify
-        point['id'] = str(point['id']) + '1'
+        point['id'] = point['id']  << 8 + self.fooie
         tm.process(point)
 
 tm = TrackMaster()
-tracker_factory = protocol.ServerFactory()
+tracker_factory = protocol.ClientFactory()
 tracker_factory.protocol = TrackRecv
-reactor.listenTCP(1025, tracker_factory)
+reactor.connectTCP("192.168.1.107", 1025, tracker_factory)
+reactor.connectTCP("192.168.1.105", 1025, tracker_factory)
 
 
 p = reactor.listenUDP(0, DatagramProtocol())
