@@ -23,27 +23,28 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         self.gameOver = False
         self.attackOk = True
         self.lightOn = True
-    
+
     def resetGame(self):
         #pass
         self.buildings = {}
         for p in self.players:
             self.players[p].reset()
-    
+
     def _turnOnLight(self):
         self.lightOn = True
-    
+
     def observe_blinkLight(self):
+        print "blinky"
         self.lightOn = False
         reactor.callLater(.5, self._turnOnLight)
-    
+
     def startGame(self):
         # I'm not sure that this is best way to do this,
         # but by using absolute times, coordination is
         # simpler
         self.observe_startGame(latencyEstimate=0)
         reactor.callLater(GAME_DURATION, self.endGame)
-        for o in self.observers: 
+        for o in self.observers:
             o.callRemote('startGame')
 
     def observe_startGame(self, latencyEstimate=PRESUMED_LATENCY):
@@ -56,12 +57,12 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         for o in self.observers: o.callRemote('blinkLight')
         self.observe_setPreGame()
         for o in self.observers: o.callRemote('setPreGame')
-        
+
     def observe_setPreGame(self):
         self.endTime = None
         self.gameOver = False
 
-    
+
     def updateTimeRemaining(self, timeRemaining):
         self.observe_updateTimeRemaining(timeRemaining, latencyEstimate=0)
         for o in self.observers: o.callRemote('updateTimeRemaining')
@@ -69,11 +70,11 @@ class Environment(pb.Cacheable, pb.RemoteCache):
     def observe_updateTimeRemaining(self, timeRemaining, latencyEstimate=PRESUMED_LATENCY):
         self.endTime = int(time.time()) + timeRemaining - latencyEstimate
 
-    
+
     def endGame(self):
         self.observe_endGame()
         for o in self.observers: o.callRemote('endGame')
-    
+
     def observe_endGame(self):
         self.gameOver = True
         self.endTime = int(time.time())
@@ -81,17 +82,17 @@ class Environment(pb.Cacheable, pb.RemoteCache):
     def createPlayer(self, team):
         player = Player()
         player.team = team
-        
+
         # I have no idea if this is being set somewhere else
         #if self.team == None:
         #    self.team = team
-            
+
         playerId = id(player)
         self.players[playerId] = player
         for o in self.observers: o.callRemote('createPlayer', playerId, player)
         #player.sounds = self.sounds
         return player
-    
+
     def observe_createPlayer(self, playerId, player):
         self.players[playerId] = player
 
@@ -116,7 +117,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         building.onDestroyed.addCallback(self.destroyBuilding)
         for o in self.observers: o.callRemote('createBuilding', bid, building)
         return building
-    
+
     def observe_createBuilding(self, bid, building):
         self.buildings[bid] = building
 
@@ -148,17 +149,17 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         player.setAction("Attacking", LoopingCall(self.attack, player))
         player.action.start(1.5, now=self.attackOk)
         self.attackOk = False
-            
+
         #self.attack(player)
-            
+
 
     def startBuilding(self, player):
         hadNoBuilding = not player.building
         if hadNoBuilding:
             newBuildingPosition = player.position
-            
+
             newBuildingPosition.x = newBuildingPosition.x - 2 #TODO this will likely have to change to x for the phone
-            
+
             building = self.createBuilding(player.team, newBuildingPosition)
             if building:
                 player.updatePosition(player.position, building)
@@ -235,22 +236,22 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             if p.self and p.building:
                 p.building.drawToolTip(view, "Build", p.team)
             p.paint(view, view.screenCoord(p.position), self.team == p.team, self.isVisible(p))
-            
+
         # Draw the score:
         #TODO color appropriately
         font = pygame.font.Font("data/Deutsch.ttf", 35)
         #font = pygame.font.Font(None, 45)
         text = font.render(str(self.calculateScore(self.team)), True, (0,255,255))
         text = pygame.transform.rotate(text, 270)
-        textrect = text.get_rect(right =735, bottom = 410)   
+        textrect = text.get_rect(right =735, bottom = 410)
         view.screen.blit(text,textrect)
-        
+
         text = font.render(str(self.calculateScore(self.getOpponentTeam())), True, (255, 0, 255))
         text = pygame.transform.rotate(text, 270)
-        textrect = text.get_rect(right = 775, bottom = 410)   
+        textrect = text.get_rect(right = 775, bottom = 410)
         view.screen.blit(text,textrect)
-        
-        
+
+
         # ======================================================================
         #Draw the time remaining
         minRemaining = 15
@@ -259,19 +260,19 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             secRemaining = max(self.endTime - int(time.time()), 0)
             minRemaining = secRemaining / 60
             secRemaining = secRemaining % 60
-            
+
         secStr = str(secRemaining)
         if secRemaining <= 9: secStr = "0" + secStr
-        
+
         minStr = str(minRemaining)
         if minRemaining <= 9: minStr = "0" + minStr
-        
+
         font = pygame.font.Font("data/Deutsch.ttf", 35)
         text = font.render(minStr + ":" + secStr, True, (255, 255, 255))
         text = pygame.transform.rotate(text, 270)
-        textrect = text.get_rect(left = 15, bottom = 410)   
+        textrect = text.get_rect(left = 15, bottom = 410)
         view.screen.blit(text,textrect)
-        
+
         # ======================================================================
         # draw end game message, as appropriate
         if self.gameOver:
@@ -284,7 +285,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                     endGameMessage = "YOU LOSE!"
                 else:
                   endGameMessage = "DRAW!"
-                  
+
             else:
                 scoreDifference = self.calculateScore(1) - self.calculateScore(2)
                 if scoreDifference > 0:
@@ -293,26 +294,26 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                     endGameMessage = "BLUE WINS!"
                 else:
                     endGameMessage = "DRAW!"
-                
-                
+
+
             font = pygame.font.Font("data/Deutsch.ttf", 70)
             #font = pygame.font.Font(None, 45)
             text = font.render(endGameMessage, True, (255,255,255))
             text = pygame.transform.rotate(text, 270)
             textrect = text.get_rect(centery =240, centerx = 350)
             view.screen.blit(text,textrect)
-            
+
         # ======================================================================
         # draw draw white square for photo sensor
-        
+
         sqrSz = 75
-        
+
         if not self.team == None:
             sensRect = pygame.Rect(0, 0, sqrSz + 5, sqrSz + 10)
             sensRect.right = 800
             sensRect.centery = 240
             pygame.draw.rect(view.screen, (0,0,0), sensRect)
-            
+
             if self.lightOn:
                 sensRect = pygame.Rect(0,0,sqrSz,sqrSz)
                 sensRect.right = 800
@@ -329,22 +330,22 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
     def stoppedObserving(self, perspective, observer):
         self.observers.remove(observer)
-    
+
     def switchTeams(self, player):
         self.team = self.getOpponentTeam()
         player.switchTeams()
-        
+
     def getOpponentTeam(self):
         if self.team == 1:
             return 2
-        else: 
+        else:
             return 1
-        
+
     def calculateScore(self, team):
         #print "score =================================="
         if team == None:
             team = self.team
-#        print "=== Our Team: " + str(team)    
+#        print "=== Our Team: " + str(team)
         score = 0;
         for playerId in self.players:
             #score = score + 100
@@ -353,7 +354,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             if player.team == team:
                 score = score + player.sides
                 score = score + player.resources
-        
+
         for buildingId in self.buildings:
             #score = score + 10000
             building = self.buildings[buildingId]
@@ -361,7 +362,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             if building.team == team:
                 score = score + building.sides
                 score = score + building.resources
-                
+
         return score * 1000;
 
 pb.setUnjellyableForClass(Environment, Environment)

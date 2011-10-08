@@ -39,7 +39,7 @@ class GameAvatar(pb.Avatar):
     def __init__(self, environment, team):
         self.environment = environment
         self.player = self.environment.createPlayer(team)
-        tm.addPlayer(self.environment)
+        tm.addPlayer(self.player)
     def disconnect(self):
         self.environment.removePlayer(self.player)
     def perspective_startAttacking(self):
@@ -140,8 +140,8 @@ class PlayerBlob:
             light.player = None
 
         self.lights = []
-        # TODO
-        #self.player.blink()
+        print "server blinking"
+        env.observers[0].callRemote('blinkLight')
 
 
 class Light:
@@ -220,11 +220,12 @@ class TrackMaster:
             self.lights[point['id']] = light
 
             # Other
-            player = self.findNearestPlayer(light)
-            if player:
-                light.setPlayer(player)
-            #light.setPlayer(self.blinkingPlayer)
-            #self.blinkNextPlayer()
+            #player = self.findNearestPlayer(light)
+            #if player:
+            #    light.setPlayer(player)
+            if self.blinkingPlayer != None:
+                light.setPlayer(self.blinkingPlayer)
+            self.blinkNextPlayer()
 
         elif point['type'] == 'mov':
             light = self.lights[point['id']]
@@ -237,9 +238,10 @@ class TrackMaster:
             return
 
     def addPlayer(self, player):
-        self.players.append(PlayerBlob(player))
+        playerblob = PlayerBlob(player)
+        self.players.append(playerblob)
 
-        self.blinkingPlayer = player
+        self.blinkingPlayer = playerblob
 
 
 class TrackRecv(LineReceiver):
