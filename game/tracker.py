@@ -35,10 +35,13 @@ class Tracker(FloatLayout):
     def connect(self):
         self.numCorners = 0
         win = self.get_parent_window()
-        self.real_start_x = -24
-        self.real_start_y = -40
-        self.real_height = 48
-        self.real_width = 80
+
+        self.real_start_y = 12
+        self.real_height = -24
+
+        #self.real_start_x = -20
+        self.real_start_x = 0
+        self.real_width = 20
 
         print self.real_height, self.real_width
 
@@ -93,12 +96,19 @@ class Tracker(FloatLayout):
 
 
     def rectify(self, touch):
-        field_percent = (touch.y - self.start_y) / self.height1
-        y = self.real_start_y + (self.real_height * field_percent)
+        y_percent = (touch.y - self.start_y) / self.height1
 
-        start_x = (1 - field_percent) * self.start_x1 + field_percent * self.start_x2
-        width = (1 - field_percent) * self.width1 + field_percent * self.width2
-        x = self.real_start_x + (self.real_width * ((touch.x - start_x) / width))
+        start_x = (1 - y_percent) * self.start_x1 + y_percent * self.start_x2
+        width = (1 - y_percent) * self.width1 + y_percent * self.width2
+        x_percent = (touch.x - start_x) / width
+
+        if self.flip:
+            temp = x_percent
+            x_percent = y_percent
+            y_percent = temp
+
+        y = self.real_start_y + (self.real_height * y_percent)
+        x = self.real_start_x + (self.real_width * x_percent)
 
         return x, y
 

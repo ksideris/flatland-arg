@@ -92,8 +92,8 @@ class PlayerBlob:
     def __init__(self, player):
         self.player = player
         self.lights = []
-        self.x = -1
-        self.y = -1
+        self.x = 0
+        self.y = 0
 
         LoopingCall(self._updatePlayer).start(0.03)
 
@@ -117,8 +117,8 @@ class PlayerBlob:
         dx = self.x - startX
         dy = self.y - startY
 
-        self.player.position = Vector2D(startX + dx / 2, startY + dy / 2)
-        #env.updatePlayerPosition(self.player, Vector2D(startX + dx / 2, startY + dy / 2))
+        #self.player.position = Vector2D(startX + dx / 2, startY + dy / 2)
+        env.updatePlayerPosition(self.player, Vector2D(startX + dx / 2, startY + dy / 2))
 
         #print (startX, startY)
 
@@ -136,10 +136,10 @@ class PlayerBlob:
         #print (self.x, self.y)
 
     def blink(self):
-        for light in self.lights:
-            light.player = None
+        #for light in self.lights:
+        #    light.player = None
 
-        self.lights = []
+        #self.lights = []
         print "server blinking ", id(self.player)
         for o in env.observers:
             o.callRemote('blinkLight', self.player)
