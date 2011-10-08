@@ -140,8 +140,9 @@ class PlayerBlob:
             light.player = None
 
         self.lights = []
-        print "server blinking"
-        env.observers[0].callRemote('blinkLight')
+        print "server blinking ", id(self.player)
+        for o in env.observers:
+            o.callRemote('blinkLight', self.player)
 
 
 class Light:
