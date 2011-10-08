@@ -31,6 +31,7 @@ from pygame import (K_a as ATTACK,
 
 from game.vector import Vector2D
 
+ACCEL_READ_WINDOW_LENGTH = 30
 
 class PlayerController(object):
     """
@@ -50,6 +51,7 @@ class PlayerController(object):
         self.view = view
         self._actionQueue = []
         self._currentAction = None
+        self._lastAction = None
 
         #Added these for gesture recognition
         self._scan = self._loadPattern("game/pickles/scanRightPattern.pickle")
@@ -69,6 +71,11 @@ class PlayerController(object):
         self._ser = accelreader.AccelReader()
         
         self.accelerometerPollFunc = None
+        self.nReadings = 0
+        
+        self.dynamicAvg = [0, 0, 0]
+        self.avg = [0, 0, 0]
+        self.lastOne = [0, 0, 0]
         
         self._movingUp = False
         self._movingDown = False
@@ -78,6 +85,8 @@ class PlayerController(object):
 
 
     def go(self):
+        #print("Listen!")
+        #self.startGestureListen()
         self.previousTime = pygame.time.get_ticks()
         self._inputCall = LoopingCall(self._handleInput)
         d = self._inputCall.start(0.03)
@@ -129,18 +138,25 @@ class PlayerController(object):
 
 
     def _startedAction(self, action):
+        actionBeforeLast = self._lastAction
+        self._lastAction = self._currentAction
         self._currentAction = action
         if self._currentAction == ATTACK:
-            self.perspective.callRemote('startAttacking')
+            if self._lastAction != ATTACK:
+                self.perspective.callRemote('startAttacking')
         elif self._currentAction == BUILD:
-            self.perspective.callRemote('startBuilding')
+            if self._lastAction != BUILD:
+                self.perspective.callRemote('startBuilding')
         elif self._currentAction == SCAN:
-            self.perspective.callRemote('startScanning')
-            self.view.addAction("sweep")
+            if self._lastAction != SCAN:
+                self.perspective.callRemote('startScanning')
+                self.view.addAction("sweep")
         elif self._currentAction == UPGRADE:
-            self.perspective.callRemote('startUpgrading')
+            if self._lastAction != UPGRADE:
+                self.perspective.callRemote('startUpgrading')
         else:
-            self._currentAction = None
+            if self._lastAction == None:
+                self._currentAction = None
 
 
     def _finishedAction(self):
@@ -155,12 +171,88 @@ class PlayerController(object):
         self._currentAction = None
         return
 
+    def getAccelReading(self):
+        
+        self.nReadings = (self.nReadings + 1) % ACCEL_READ_WINDOW_LENGTH
+        data = self._readSerial()#reader.get_pos()
+            
+        newToOldRatio = .2
+            
+        for i in range(0,3):
+            #dynamicAvg[i] = dynamicAvg[i] + (data[i] - lastOne[i])*(data[i] - lastOne[i])
+            #avg[i] = avg[i] + data[i]*data[i]*getSignMultiplier(data[i])
+            
+            self.dynamicAvg[i] = (1 - newToOldRatio)*self.dynamicAvg[i] + newToOldRatio*(data[i] - self.lastOne[i])*(data[i] - self.lastOne[i])
+            self.avg[i]        = (1 - newToOldRatio)*self.avg[i] + newToOldRatio*data[i]*data[i]*self.getSignMultiplier(data[i])
+            
+            self.lastOne[i] = data[i]
+            
+        
+        if self.nReadings == 0:
+        #=======================================================================
+            movingTooMuchForUpgrade = False
+            movingSlowEnoughForUpgrade = True
+                
+            signlessAvg = self.avg
+            for i in range(0,3):
+                #dynamicAvg[i] = dynamicAvg[i] #/ nCycles
+                #avg[i] = avg[i] #/ nCycles
+                signlessAvg[i] = abs(self.dynamicAvg[i])
+                movingTooMuchForUpgrade = movingTooMuchForUpgrade or signlessAvg[i] > 10000
+                movingSlowEnoughForUpgrade = movingSlowEnoughForUpgrade and signlessAvg[i] < 7
+            
+            
+            stormiestDimension = self.dynamicAvg.index(max(self.dynamicAvg))
+            
+                #check for the upgrading gesture (static)
+            if self.lastOne.index(max(self.lastOne)) == 0 and self.lastOne[0] > 800:# and not movingTooMuchForUpgrade and movingSlowEnoughForUpgrade:
+                print("upgrade")
+                self._startedAction(UPGRADE)
+                    #           
+         #self._startedAction(UPGRADE)
+    #            #check for dynamic gestures
+            
+            elif movingTooMuchForUpgrade:
+    #                if signlessAvg.index(max(signlessAvg)) == 0 and avg[0] > 0 and stormiestDimension == 2:
+    #                    print("upgrade")
+    #                el
+                if stormiestDimension == 0:
+                    print("attack")
+                    self._startedAction(ATTACK)
+                    #self._startedAction(ATTACK)
+                elif stormiestDimension == 1:
+                    print("scan")
+                    self._startedAction(SCAN)
+                
+                    #self._startedAction(SCAN)
+                elif stormiestDimension == 2:
+                    print("build")
+                    self._startedAction(BUILD)
+                    #self._startedAction(BUILD)
+            else:
+                print("none")
+                self._finishedAction()
+                
+            # ===== print totals ====== 
+            print "prev:\nX: " + str(self.lastOne[0]) +"\nY: " +  str(self.lastOne[1]) + "\nZ: " + str(self.lastOne[2]) + "\n"
+            print "\nacc:\nX: " + str(self.avg[0]) +"\nY: " +  str(self.avg[1]) + "\nZ: " + str(self.avg[2]) + "\n"
+            print "\njerk:\nX: " + str(self.dynamicAvg[0]) +"\nY: " +  str(self.dynamicAvg[1]) + "\nZ: " + str(self.dynamicAvg[2]) + "\n\n"
+            
+            self.dynamicAvg = [0, 0, 0]
+            self.avg = [0, 0, 0]
+            self.lastOne = [0, 0, 0]
+            
+        #=======================================================================
+        #=======================================================================
+
+            
+
     def pollAccelerometer(self):
         dynamicAvg = [0, 0, 0]
         avg = [0, 0, 0]
         lastOne = [0, 0, 0]
         nChecks = 0
-        nCycles = 75
+        nCycles = 16
     
         for i in range(0, nCycles):
             data = self._readSerial()#reader.get_pos()
@@ -177,38 +269,53 @@ class PlayerController(object):
                 lastOne[i] = data[i]
                 
             nChecks = (nChecks + 1) % nCycles
-            pygame.time.wait(10)
+            pygame.time.wait(20)
             
         
         #=======================================================================
         
-        movingTooMuchForUpgrade = True
-        
+        movingTooMuchForUpgrade = False
+        movingSlowEnoughForUpgrade = True
+            
         signlessAvg = avg
         for i in range(0,3):
             #dynamicAvg[i] = dynamicAvg[i] #/ nCycles
             #avg[i] = avg[i] #/ nCycles
-            signlessAvg[i] = abs(avg[i])
-            movingTooMuchForUpgrade = movingTooMuchForUpgrade and dynamicAvg[i] > 7
+            signlessAvg[i] = abs(dynamicAvg[i])
+            movingTooMuchForUpgrade = movingTooMuchForUpgrade or signlessAvg[i] > 10000
+            movingSlowEnoughForUpgrade = movingSlowEnoughForUpgrade and signlessAvg[i] < 5
         
         
         stormiestDimension = dynamicAvg.index(max(dynamicAvg))
         
-        if self._currentAction == None:
             #check for the upgrading gesture (static)
-            if signlessAvg.index(max(signlessAvg)) == 0 and avg[0] > 0 and not movingTooMuchForUpgrade:
-                print("upgrade")
-                self._startedAction(UPGRADE)
-            #check for dynamic gestures
-            elif stormiestDimension == 0:
+        if lastOne.index(max(lastOne)) == 0 and lastOne[0] > 900 and not movingTooMuchForUpgrade and movingSlowEnoughForUpgrade:
+            print("upgrade")
+            self._startedAction(UPGRADE)
+                #           
+     #self._startedAction(UPGRADE)
+#            #check for dynamic gestures
+        
+        elif movingTooMuchForUpgrade:
+#                if signlessAvg.index(max(signlessAvg)) == 0 and avg[0] > 0 and stormiestDimension == 2:
+#                    print("upgrade")
+#                el
+            if stormiestDimension == 0:
                 print("attack")
                 self._startedAction(ATTACK)
+                #self._startedAction(ATTACK)
             elif stormiestDimension == 1:
                 print("scan")
                 self._startedAction(SCAN)
+            
+                #self._startedAction(SCAN)
             elif stormiestDimension == 2:
                 print("build")
                 self._startedAction(BUILD)
+                #self._startedAction(BUILD)
+        else:
+            print("none")
+            self._finishedAction()
         
         # ===== print totals ====== 
         #print "\njerk:\nX: " + str(dynamicAvg[0]) +"\nY: " +  str(dynamicAvg[1]) + "\nZ: " + str(dynamicAvg[2])
@@ -226,9 +333,9 @@ class PlayerController(object):
             return 1
 
     def startGestureListen(self):
-        #self.accelerometerPollFunc = LoopingCall(self.pollAccelerometer)
-        #self.accelerometerPollFunc.start(.3, now=True)
-        self.pollAccelerometer()
+        self.accelerometerPollFunc = LoopingCall(self.pollAccelerometer)
+        self.accelerometerPollFunc.start(.4, now=True)
+        #self.pollAccelerometer()
         #don't start immediately because people tend not to start flailing until *after* they press the screen 
 
     def stopGestureListen(self):
@@ -248,16 +355,18 @@ class PlayerController(object):
         #updated for lack of scepter button, replacement will be if player is pressing screen
         #don't know if this is the right way to get mouse buttons from event queue
         
+        self.getAccelReading()
+        
         for event in pygame.event.get():
-            onDown = self._serialData[self.BUTTON] == 0
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                self._serialData[self.BUTTON] = 1
-                if onDown:
-                    self.startGestureListen()
-                    
-            elif event.type == pygame.MOUSEBUTTONUP:
-                self._serialData[self.BUTTON] = 0
-                self.stopGestureListen()
+#            onDown = self._serialData[self.BUTTON] == 0
+#            if event.type == pygame.MOUSEBUTTONDOWN:
+#                self._serialData[self.BUTTON] = 1
+#                if onDown:
+#                    self.startGestureListen()
+#                    
+#            elif event.type == pygame.MOUSEBUTTONUP:
+#                self._serialData[self.BUTTON] = 0
+#                self.stopGestureListen()
             
             
             if (event.type == pygame.KEYDOWN):

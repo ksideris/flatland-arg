@@ -12,6 +12,7 @@ import pickle
 import atexit
 import accelreader
 from copy import deepcopy
+import pygame.time
 
 
 help_message = '''
@@ -100,6 +101,81 @@ def patternDifference(a,b):
     return totalDifference
 
 def defineLimits():
+    while True:
+        try:
+            dynamicAvg = [0, 0, 0]
+            avg = [0, 0, 0]
+            lastOne = [0, 0, 0]
+            nChecks = 0
+            nCycles = 75
+        
+            for i in range(0, nCycles):
+                data =  reader.get_pos()
+                
+                newToOldRatio = .2
+                    
+                for i in range(0,3):
+                    #dynamicAvg[i] = dynamicAvg[i] + (data[i] - lastOne[i])*(data[i] - lastOne[i])
+                    #avg[i] = avg[i] + data[i]*data[i]*getSignMultiplier(data[i])
+                    
+                    dynamicAvg[i] = (1 - newToOldRatio)*dynamicAvg[i] + newToOldRatio*(data[i] - lastOne[i])*(data[i] - lastOne[i])
+                    avg[i]        = (1 - newToOldRatio)*avg[i] + newToOldRatio*data[i]*data[i]*getSignMultiplier(data[i])
+                    
+                    lastOne[i] = data[i]
+                    
+                nChecks = (nChecks + 1) % nCycles
+                pygame.time.wait(10)
+                
+            
+            #=======================================================================
+            
+            movingTooMuchForUpgrade = False
+            movingSlowEnoughForUpgrade = True
+            
+            signlessAvg = avg
+            for i in range(0,3):
+                #dynamicAvg[i] = dynamicAvg[i] #/ nCycles
+                #avg[i] = avg[i] #/ nCycles
+                signlessAvg[i] = abs(dynamicAvg[i])
+                movingTooMuchForUpgrade = movingTooMuchForUpgrade or signlessAvg[i] > 20000
+                movingSlowEnoughForUpgrade = movingSlowEnoughForUpgrade and signlessAvg[i] < 5
+            
+            
+            stormiestDimension = dynamicAvg.index(max(dynamicAvg))
+            
+#                check for the upgrading gesture (static)
+            if lastOne.index(max(lastOne)) == 0 and lastOne[0] > 900 and not movingTooMuchForUpgrade and movingSlowEnoughForUpgrade:
+                print("upgrade")
+#                #self._startedAction(UPGRADE)
+#            #check for dynamic gestures
+            
+            elif movingTooMuchForUpgrade:
+#                if signlessAvg.index(max(signlessAvg)) == 0 and avg[0] > 0 and stormiestDimension == 2:
+#                    print("upgrade")
+#                el
+                if stormiestDimension == 0:
+                    print("attack")
+                    #self._startedAction(ATTACK)
+                elif stormiestDimension == 1:
+                    print("scan")
+                    #self._startedAction(SCAN)
+                elif stormiestDimension == 2:
+                    print("build")
+                    #self._startedAction(BUILD)
+            else:
+                print("none")
+            
+            # ===== print totals ====== 
+            print "\njerk:\nX: " + str(dynamicAvg[0]) +"\nY: " +  str(dynamicAvg[1]) + "\nZ: " + str(dynamicAvg[2])
+            print "\nlast:\nX: " + str(lastOne[0]) +"\nY: " +  str(lastOne[1]) + "\nZ: " + str(lastOne[2]) + "\n"
+            #print "\nacc:\nX: " + str(avg[0]) +"\nY: " +  str(avg[1]) + "\nZ: " + str(avg[2]) + "\n\n"
+            
+            #=======================================================================
+        except KeyboardInterrupt:
+            resetLimits()
+            break
+
+def defineLimitsNotSoOld():
     
     dynamicAvg = [0, 0, 0]
     avg = [0, 0, 0]
@@ -171,7 +247,6 @@ def defineLimitsOld():
     on each axis. the regions are used later on when creating patterns and sample data
     """
     while True:
-        
         try:
             data = reader.get_pos()
             for i in range(len(maxData)):
