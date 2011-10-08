@@ -21,12 +21,12 @@ from pygame import (K_a as ATTACK,
                     K_s as SCAN,
                     K_d as BUILD,
                     K_w as UPGRADE,
-                    
+
                     K_DOWN as MOVE_DOWN,
                     K_UP as MOVE_UP,
                     K_LEFT as MOVE_LEFT,
                     K_RIGHT as MOVE_RIGHT,
-                    
+
                     K_ESCAPE as QUIT)
 
 from game.vector import Vector2D
@@ -69,14 +69,9 @@ class PlayerController(object):
         self._sampleCnt = 0
         self._lastPosition = (0,0,0)
         self._ser = accelreader.AccelReader()
-        
+
         self.accelerometerPollFunc = None
-        self.nReadings = 0
-        
-        self.dynamicAvg = [0, 0, 0]
-        self.avg = [0, 0, 0]
-        self.lastOne = [0, 0, 0]
-        
+
         self._movingUp = False
         self._movingDown = False
         self._movingLeft = False
@@ -108,23 +103,23 @@ class PlayerController(object):
         else:
             #self.position += (dt * self.speed) * direction.norm()
             pass
-        
+
         #=======================================================================
         directionX = 0
         directionY = 0
-        
+
         if (self._movingUp):
             directionY = -1
         elif self._movingDown:
             directionY = 1
-            
+
         if (self._movingLeft):
             directionX = -1
         elif self._movingRight:
             directionX = 1
-        
+
         direction = Vector2D(directionX, directionY)#destination - self.position
-        
+
         #if direction < (self.speed * dt):
         #    self.position = destination
         #else:
@@ -132,9 +127,9 @@ class PlayerController(object):
         if directionX != 0 or directionY != 0:
             self.position += (dt * self.speed) * direction.norm()
         #=======================================================================
-    
+
         self.perspective.callRemote('updatePosition', self.position)
-        self.view.setCenter(self.position)
+        #self.view.setCenter(self.position)
 
 
     def _startedAction(self, action):
@@ -252,42 +247,41 @@ class PlayerController(object):
         avg = [0, 0, 0]
         lastOne = [0, 0, 0]
         nChecks = 0
-        nCycles = 16
-    
+        nCycles = 75
+
         for i in range(0, nCycles):
             data = self._readSerial()#reader.get_pos()
-            
+
             newToOldRatio = .2
-                
+
             for i in range(0,3):
                 #dynamicAvg[i] = dynamicAvg[i] + (data[i] - lastOne[i])*(data[i] - lastOne[i])
                 #avg[i] = avg[i] + data[i]*data[i]*getSignMultiplier(data[i])
-                
+
                 dynamicAvg[i] = (1 - newToOldRatio)*dynamicAvg[i] + newToOldRatio*(data[i] - lastOne[i])*(data[i] - lastOne[i])
                 avg[i]        = (1 - newToOldRatio)*avg[i] + newToOldRatio*data[i]*data[i]*self.getSignMultiplier(data[i])
-                
+
                 lastOne[i] = data[i]
-                
+
             nChecks = (nChecks + 1) % nCycles
-            pygame.time.wait(20)
-            
-        
+            pygame.time.wait(10)
+
+
         #=======================================================================
-        
-        movingTooMuchForUpgrade = False
-        movingSlowEnoughForUpgrade = True
-            
+
+        movingTooMuchForUpgrade = True
+
         signlessAvg = avg
         for i in range(0,3):
             #dynamicAvg[i] = dynamicAvg[i] #/ nCycles
             #avg[i] = avg[i] #/ nCycles
-            signlessAvg[i] = abs(dynamicAvg[i])
-            movingTooMuchForUpgrade = movingTooMuchForUpgrade or signlessAvg[i] > 10000
-            movingSlowEnoughForUpgrade = movingSlowEnoughForUpgrade and signlessAvg[i] < 5
-        
-        
+            signlessAvg[i] = abs(avg[i])
+            movingTooMuchForUpgrade = movingTooMuchForUpgrade and dynamicAvg[i] > 7
+
+
         stormiestDimension = dynamicAvg.index(max(dynamicAvg))
-        
+
+        if self._currentAction == None:
             #check for the upgrading gesture (static)
         if lastOne.index(max(lastOne)) == 0 and lastOne[0] > 900 and not movingTooMuchForUpgrade and movingSlowEnoughForUpgrade:
             print("upgrade")
@@ -312,18 +306,14 @@ class PlayerController(object):
             elif stormiestDimension == 2:
                 print("build")
                 self._startedAction(BUILD)
-                #self._startedAction(BUILD)
-        else:
-            print("none")
-            self._finishedAction()
-        
-        # ===== print totals ====== 
+
+        # ===== print totals ======
         #print "\njerk:\nX: " + str(dynamicAvg[0]) +"\nY: " +  str(dynamicAvg[1]) + "\nZ: " + str(dynamicAvg[2])
-        
-        
+
+
         #print "\nacc:\nX: " + str(avg[0]) +"\nY: " +  str(avg[1]) + "\nZ: " + str(avg[2]) + "\n\n"
         #=======================================================================
-        
+
 
 
     def getSignMultiplier(self,num):
@@ -333,16 +323,16 @@ class PlayerController(object):
             return 1
 
     def startGestureListen(self):
-        self.accelerometerPollFunc = LoopingCall(self.pollAccelerometer)
-        self.accelerometerPollFunc.start(.4, now=True)
-        #self.pollAccelerometer()
-        #don't start immediately because people tend not to start flailing until *after* they press the screen 
+        #self.accelerometerPollFunc = LoopingCall(self.pollAccelerometer)
+        #self.accelerometerPollFunc.start(.3, now=True)
+        self.pollAccelerometer()
+        #don't start immediately because people tend not to start flailing until *after* they press the screen
 
     def stopGestureListen(self):
         if self.accelerometerPollFunc and self.accelerometerPollFunc.running:
             self.accelerometerPollFunc.stop()
         self._finishedAction()
-            
+
     def _handleInput(self):
         """
         Handle currently available pygame input events.
@@ -354,29 +344,27 @@ class PlayerController(object):
         #If player is pressing red self.BUTTON on scepter take two samples, add them to the average, match to predefined patterns
         #updated for lack of scepter button, replacement will be if player is pressing screen
         #don't know if this is the right way to get mouse buttons from event queue
-        
-        self.getAccelReading()
-        
+
         for event in pygame.event.get():
-#            onDown = self._serialData[self.BUTTON] == 0
-#            if event.type == pygame.MOUSEBUTTONDOWN:
-#                self._serialData[self.BUTTON] = 1
-#                if onDown:
-#                    self.startGestureListen()
-#                    
-#            elif event.type == pygame.MOUSEBUTTONUP:
-#                self._serialData[self.BUTTON] = 0
-#                self.stopGestureListen()
-            
-            
+            onDown = self._serialData[self.BUTTON] == 0
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self._serialData[self.BUTTON] = 1
+                if onDown:
+                    self.startGestureListen()
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                self._serialData[self.BUTTON] = 0
+                self.stopGestureListen()
+
+
             if (event.type == pygame.KEYDOWN):
                 self.motionKeyPress(event.key)
             elif (event.type == pygame.KEYUP):
                 self.motionKeyRelease(event.key)
-        
+
         #buttons = pygame.mouse.get_pressed()
         #self._serialData[self.BUTTON] = buttons[0]
-        #print str(self._serialData[self.BUTTON]) 
+        #print str(self._serialData[self.BUTTON])
 
 #        if self._serialData[self.BUTTON] == 1:
 #            self._buildSampleData()
@@ -483,17 +471,17 @@ class PlayerController(object):
             return pickle.load(f)
         finally:
             f.close()
-            
+
     def motionKeyPress(self, key):
         if key == MOVE_UP:
             self._movingUp = True
-        
+
         if key == MOVE_DOWN:
             self._movingDown = True
-            
+
         if key == MOVE_LEFT:
             self._movingLeft = True
-        
+
         if key == MOVE_RIGHT:
             self._movingRight = True
 
@@ -501,15 +489,15 @@ class PlayerController(object):
     def motionKeyRelease(self, key):
         if key == MOVE_UP:
             self._movingUp = False
-        
+
         if key == MOVE_DOWN:
             self._movingDown = False
-            
+
         if key == MOVE_LEFT:
             self._movingLeft = False
-        
+
         if key == MOVE_RIGHT:
             self._movingRight = False
-            
+
     def isMotionKey(self, key):
         return key == MOVE_UP or key == MOVE_DOWN or key == MOVE_LEFT or key == MOVE_RIGHT

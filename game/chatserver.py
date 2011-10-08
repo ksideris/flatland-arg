@@ -252,6 +252,7 @@ class TrackRecv(LineReceiver):
 
     def lineReceived(self, line):
         point = cPickle.loads(line)
+        #print point
         # TODO: Uniquify
         point['id'] = point['id']  << 8 + self.fooie
         tm.process(point)
@@ -259,8 +260,11 @@ class TrackRecv(LineReceiver):
 tm = TrackMaster()
 tracker_factory = protocol.ClientFactory()
 tracker_factory.protocol = TrackRecv
-reactor.connectTCP("192.168.1.107", 1025, tracker_factory)
-reactor.connectTCP("192.168.1.105", 1025, tracker_factory)
+
+# SETUP
+#reactor.connectTCP("192.168.1.107", 1025, tracker_factory)
+#reactor.connectTCP("192.168.1.105", 1025, tracker_factory)
+reactor.connectTCP("127.0.0.1", 1025, tracker_factory)
 
 
 p = reactor.listenUDP(0, DatagramProtocol())

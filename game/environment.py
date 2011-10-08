@@ -234,6 +234,8 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                 b.paint(view, view.screenCoord(b.position), b.team == self.team)
         self.rp.paint(view, view.screenCoord(self.rp.position))
         for p in self.players.itervalues():
+            if p.self:
+                view.setCenter(p.position)
             if p.self and p.building:
                 p.building.drawToolTip(view, "Build", p.team)
             p.paint(view, view.screenCoord(p.position), self.team == p.team, self.isVisible(p))

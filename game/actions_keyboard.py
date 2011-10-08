@@ -41,7 +41,7 @@ class PlayerController(object):
         self.view = view
         self._actionQueue = []
         self._currentAction = None
-        
+
         self._movingUp = False
         self._movingDown = False
         self._movingLeft = False
@@ -65,41 +65,41 @@ class PlayerController(object):
         if not dt:
             return
         destination = self.view.worldCoord(Vector2D(pygame.mouse.get_pos()))
-        
+
         directionX = 0
         directionY = 0
-        
+
         if (self._movingUp):
             directionY = -1
         elif self._movingDown:
             directionY = 1
-            
+
         if (self._movingLeft):
             directionX = -1
         elif self._movingRight:
             directionX = 1
-        
+
         direction = Vector2D(directionX, directionY)#destination - self.position
-        
+
         #if direction < (self.speed * dt):
         #    self.position = destination
         #else:
         #    self.position += (dt * self.speed) * direction.norm()
         if directionX != 0 or directionY != 0:
             self.position += (dt * self.speed) * direction.norm()
-        
+
         self.perspective.callRemote('updatePosition', self.position)
-        self.view.setCenter(self.position)
+        #self.view.setCenter(self.position)
 
 
     def _startedAction(self, action):
-        
+
         lastAction = self._currentAction
         self._currentAction = action
-        
+
         if self._currentAction == SWITCH_TEAMS:
             self.perspective.callRemote("switchTeams")
-        
+
         if self._currentAction == ATTACK:
             self.perspective.callRemote('startAttacking')
         elif self._currentAction == BUILD:
@@ -115,7 +115,7 @@ class PlayerController(object):
                 self.perspective.callRemote('finishUpgrading')
         else:
             self._currentAction = None
-        
+
 
     def _finishedAction(self):
         if self._currentAction == ATTACK:
@@ -127,19 +127,19 @@ class PlayerController(object):
         #elif self._currentAction == UPGRADE:
         #    self.perspective.callRemote('finishUpgrading')
         self._currentAction = None
-        
+
         return
 
     def motionKeyPress(self, key):
         if key == MOVE_UP:
             self._movingUp = True
-        
+
         if key == MOVE_DOWN:
             self._movingDown = True
-            
+
         if key == MOVE_LEFT:
             self._movingLeft = True
-        
+
         if key == MOVE_RIGHT:
             self._movingRight = True
 
@@ -147,16 +147,16 @@ class PlayerController(object):
     def motionKeyRelease(self, key):
         if key == MOVE_UP:
             self._movingUp = False
-        
+
         if key == MOVE_DOWN:
             self._movingDown = False
-            
+
         if key == MOVE_LEFT:
             self._movingLeft = False
-        
+
         if key == MOVE_RIGHT:
             self._movingRight = False
-            
+
     def isMotionKey(self, key):
         return key == MOVE_UP or key == MOVE_DOWN or key == MOVE_LEFT or key == MOVE_RIGHT
 
@@ -175,10 +175,10 @@ class PlayerController(object):
             if (event.type == pygame.KEYDOWN):
                 if (event.key in self._actions):
                     self._actionQueue.append(event.key)
-                
+
                 self.motionKeyPress(event.key)
-                    
-                
+
+
             elif (event.type == pygame.KEYUP):
                 self.motionKeyRelease(event.key)
                 if (event.key in self._actions):

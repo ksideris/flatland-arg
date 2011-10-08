@@ -36,11 +36,14 @@ class Tracker(FloatLayout):
         self.numCorners = 0
         win = self.get_parent_window()
 
+        # SETUP
+        self.flip = False
+
         self.real_start_y = 12
         self.real_height = -24
 
-        #self.real_start_x = -20
-        self.real_start_x = 0
+        self.real_start_x = -20
+        #self.real_start_x = 0
         self.real_width = 20
 
         print self.real_height, self.real_width
@@ -174,7 +177,7 @@ class Tracker(FloatLayout):
 
     def on_touch_up(self, touch):
         if touch in self._corners:
-            self.numCorners -= 1
+            #self.numCorners -= 1
             return
 
         ud = touch.ud
