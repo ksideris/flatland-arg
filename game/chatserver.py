@@ -13,7 +13,7 @@ from twisted.internet.protocol import DatagramProtocol
 from ServerKeyboardController import ServerController
 from vector import Vector2D
 
-MAX_DISTANCE2 = 100
+MAX_DISTANCE2 = 5
 MAX_SPEED = 10
 
 class GameRealm:
@@ -136,10 +136,10 @@ class PlayerBlob:
         #print (self.x, self.y)
 
     def blink(self):
-        #for light in self.lights:
-        #    light.player = None
+        for light in self.lights:
+            light.player = None
 
-        #self.lights = []
+        self.lights = []
         print "server blinking ", id(self.player)
         for o in env.observers:
             o.callRemote('blinkLight', self.player)
@@ -184,14 +184,12 @@ class TrackMaster:
 
         self.lights = {}
         print "init"
+        LoopingCall(self.blinkNextPlayer).start(1)
 
     def findNearestPlayer(self, light):
         min = None
         minPlayer = None
         for player in self.players:
-            if not player.hasLight():
-                minPlayer = player
-
             dx = player.x - light.x
             dy = player.y - light.y
             distanceSquared = dx*dx + dy*dy
@@ -200,20 +198,36 @@ class TrackMaster:
                     minPlayer = player
                     min = distanceSquared
 
+        if minPlayer == None and self.blinkingPlayer != None:
+            minPlayer = self.blinkingPlayer
+            self.blinkingPlayer = None
+
         return minPlayer
 
     def blinkNextPlayer(self):
-        self.blinkingPlayer = None
+        noLightPlayers = []
+        oneLightPlayers = []
+        twoPlusLightPlayers = []
 
         for p in self.players:
             if not p.hasLight():
-                self.blinkingPlayer = p
-                break
+                noLightPlayers.append(p)
+            elif len(p.lights) == 1:
+                oneLightPlayers.append(p)
+            else:
+                twoPlusLightPlayers = []
 
-        if self.blinkingPlayer == None:
-            self.blinkingPlayer = random.choice(self.players)
+        if len(noLightPlayers) > 0:
+            self.blinkingPlayer = random.choice(noLightPlayers)
+        elif len(twoPlusLightPlayers) > 0:
+            self.blinkingPlayer = random.choice(twoPlusLightPlayers)
+        #elif len(oneLightPlayers) > 0:
+        #    self.blinkingPlayer = random.choice(oneLightPlayers)
+        else:
+            self.blinkingPlayer = None
 
-        self.blinkingPlayer.blink()
+        if self.blinkingPlayer != None:
+            self.blinkingPlayer.blink()
 
     def process(self, point):
         if point['type'] == 'new':
@@ -221,17 +235,22 @@ class TrackMaster:
             self.lights[point['id']] = light
 
             # Other
-            #player = self.findNearestPlayer(light)
-            #if player:
-            #    light.setPlayer(player)
-            if self.blinkingPlayer != None:
-                light.setPlayer(self.blinkingPlayer)
-            self.blinkNextPlayer()
+            player = self.findNearestPlayer(light)
+            if player:
+                light.setPlayer(player)
+            #if self.blinkingPlayer != None:
+            #    light.setPlayer(self.blinkingPlayer)
 
         elif point['type'] == 'mov':
+            if not (point['id'] in self.lights):
+                return
+
             light = self.lights[point['id']]
             light.move(point['pos'])
         elif point['type'] == 'del':
+            if not (point['id'] in self.lights):
+                return
+
             light = self.lights[point['id']]
             light.dispose()
         else:
@@ -241,8 +260,6 @@ class TrackMaster:
     def addPlayer(self, player):
         playerblob = PlayerBlob(player)
         self.players.append(playerblob)
-
-        self.blinkingPlayer = playerblob
 
 
 class TrackRecv(LineReceiver):
@@ -262,9 +279,9 @@ tracker_factory = protocol.ClientFactory()
 tracker_factory.protocol = TrackRecv
 
 # SETUP
-#reactor.connectTCP("192.168.1.107", 1025, tracker_factory)
-#reactor.connectTCP("192.168.1.105", 1025, tracker_factory)
-reactor.connectTCP("127.0.0.1", 1025, tracker_factory)
+reactor.connectTCP("192.168.1.101", 1025, tracker_factory)
+reactor.connectTCP("192.168.1.102", 1025, tracker_factory)
+#reactor.connectTCP("127.0.0.1", 1025, tracker_factory)
 
 
 p = reactor.listenUDP(0, DatagramProtocol())

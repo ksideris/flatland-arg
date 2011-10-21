@@ -167,27 +167,27 @@ class PlayerController(object):
         return
 
     def getAccelReading(self):
-        
+
         self.nReadings = (self.nReadings + 1) % ACCEL_READ_WINDOW_LENGTH
         data = self._readSerial()#reader.get_pos()
-            
+
         newToOldRatio = .2
-            
+
         for i in range(0,3):
             #dynamicAvg[i] = dynamicAvg[i] + (data[i] - lastOne[i])*(data[i] - lastOne[i])
             #avg[i] = avg[i] + data[i]*data[i]*getSignMultiplier(data[i])
-            
+
             self.dynamicAvg[i] = (1 - newToOldRatio)*self.dynamicAvg[i] + newToOldRatio*(data[i] - self.lastOne[i])*(data[i] - self.lastOne[i])
             self.avg[i]        = (1 - newToOldRatio)*self.avg[i] + newToOldRatio*data[i]*data[i]*self.getSignMultiplier(data[i])
-            
+
             self.lastOne[i] = data[i]
-            
-        
+
+
         if self.nReadings == 0:
         #=======================================================================
             movingTooMuchForUpgrade = False
             movingSlowEnoughForUpgrade = True
-                
+
             signlessAvg = self.avg
             for i in range(0,3):
                 #dynamicAvg[i] = dynamicAvg[i] #/ nCycles
@@ -195,18 +195,18 @@ class PlayerController(object):
                 signlessAvg[i] = abs(self.dynamicAvg[i])
                 movingTooMuchForUpgrade = movingTooMuchForUpgrade or signlessAvg[i] > 10000
                 movingSlowEnoughForUpgrade = movingSlowEnoughForUpgrade and signlessAvg[i] < 7
-            
-            
+
+
             stormiestDimension = self.dynamicAvg.index(max(self.dynamicAvg))
-            
+
                 #check for the upgrading gesture (static)
             if self.lastOne.index(max(self.lastOne)) == 0 and self.lastOne[0] > 800:# and not movingTooMuchForUpgrade and movingSlowEnoughForUpgrade:
                 print("upgrade")
                 self._startedAction(UPGRADE)
-                    #           
+                    #
          #self._startedAction(UPGRADE)
     #            #check for dynamic gestures
-            
+
             elif movingTooMuchForUpgrade:
     #                if signlessAvg.index(max(signlessAvg)) == 0 and avg[0] > 0 and stormiestDimension == 2:
     #                    print("upgrade")
@@ -218,7 +218,7 @@ class PlayerController(object):
                 elif stormiestDimension == 1:
                     print("scan")
                     self._startedAction(SCAN)
-                
+
                     #self._startedAction(SCAN)
                 elif stormiestDimension == 2:
                     print("build")
@@ -227,20 +227,20 @@ class PlayerController(object):
             else:
                 print("none")
                 self._finishedAction()
-                
-            # ===== print totals ====== 
+
+            # ===== print totals ======
             print "prev:\nX: " + str(self.lastOne[0]) +"\nY: " +  str(self.lastOne[1]) + "\nZ: " + str(self.lastOne[2]) + "\n"
             print "\nacc:\nX: " + str(self.avg[0]) +"\nY: " +  str(self.avg[1]) + "\nZ: " + str(self.avg[2]) + "\n"
             print "\njerk:\nX: " + str(self.dynamicAvg[0]) +"\nY: " +  str(self.dynamicAvg[1]) + "\nZ: " + str(self.dynamicAvg[2]) + "\n\n"
-            
+
             self.dynamicAvg = [0, 0, 0]
             self.avg = [0, 0, 0]
             self.lastOne = [0, 0, 0]
-            
+
         #=======================================================================
         #=======================================================================
 
-            
+
 
     def pollAccelerometer(self):
         dynamicAvg = [0, 0, 0]
@@ -282,14 +282,15 @@ class PlayerController(object):
         stormiestDimension = dynamicAvg.index(max(dynamicAvg))
 
         if self._currentAction == None:
+            pass
             #check for the upgrading gesture (static)
         if lastOne.index(max(lastOne)) == 0 and lastOne[0] > 900 and not movingTooMuchForUpgrade and movingSlowEnoughForUpgrade:
             print("upgrade")
             self._startedAction(UPGRADE)
-                #           
+                #
      #self._startedAction(UPGRADE)
 #            #check for dynamic gestures
-        
+
         elif movingTooMuchForUpgrade:
 #                if signlessAvg.index(max(signlessAvg)) == 0 and avg[0] > 0 and stormiestDimension == 2:
 #                    print("upgrade")
@@ -301,7 +302,7 @@ class PlayerController(object):
             elif stormiestDimension == 1:
                 print("scan")
                 self._startedAction(SCAN)
-            
+
                 #self._startedAction(SCAN)
             elif stormiestDimension == 2:
                 print("build")
