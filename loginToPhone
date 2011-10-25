@@ -1,2 +1,2 @@
 #!/bin/bash
-ssh root@"$1" "cd /home/user/flatland-arg/ ; /bin/sh -i"
+ssh -t root@"$1" "cd /home/user/flatland-arg/ ; /bin/sh -i"
