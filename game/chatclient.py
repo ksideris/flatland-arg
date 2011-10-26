@@ -20,6 +20,7 @@ USE_FULL_SCREEN = False
 if os.environ.get("FARG_INPUT") == "wand":
     from game.actions_wand import PlayerController
     USE_FULL_SCREEN = True
+    print("full screen")
 else:
     from game.actions_keyboard import PlayerController
 

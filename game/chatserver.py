@@ -11,6 +11,7 @@ from twisted.internet import reactor
 from twisted.spread import pb
 from twisted.internet.protocol import DatagramProtocol
 from ServerKeyboardController import ServerController
+
 from vector import Vector2D
 
 MAX_DISTANCE2 = 5
@@ -59,8 +60,10 @@ class GameAvatar(pb.Avatar):
     def perspective_finishUpgrading(self):
         self.environment.finishUpgrading(self.player)
     def perspective_updatePosition(self, position):
-        #self.environment.updatePlayerPosition(self.player, position)
-        pass
+        #TODO tracker is doing some kind of update too.
+        #make it such that keyboard and server don't "fight"
+        self.environment.updatePlayerPosition(self.player, position)
+        #pass
     def perspective_getEnvironment(self):
         return self.environment
     def perspective_getTeam(self):
@@ -79,6 +82,9 @@ view = Window(env)
 realm.environment = env
 view.start('Server')
 LoopingCall(lambda: pygame.event.pump()).start(0.03)
+
+controller = ServerController(realm, view)
+controller.go()
 
 portal = portal.Portal(realm, [checkers.AllowAnonymousAccess()])
 
@@ -118,7 +124,9 @@ class PlayerBlob:
         dy = self.y - startY
 
         #self.player.position = Vector2D(startX + dx / 2, startY + dy / 2)
-        env.updatePlayerPosition(self.player, Vector2D(startX + dx / 2, startY + dy / 2))
+        
+        #TODO restore this line!!!!
+        #env.updatePlayerPosition(self.player, Vector2D(startX + dx / 2, startY + dy / 2))
 
         #print (startX, startY)
 
@@ -184,7 +192,7 @@ class TrackMaster:
 
         self.lights = {}
         print "init"
-        LoopingCall(self.blinkNextPlayer).start(1)
+        #LoopingCall(self.blinkNextPlayer).start(1)
 
     def findNearestPlayer(self, light):
         min = None

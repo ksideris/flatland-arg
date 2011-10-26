@@ -101,7 +101,7 @@ class Images:
 
     def load(self):
         for a in self.images:
-            print(str(a))
+            #print(str(a))
             self.images[a].load()
         self.images["Enemy",1].start(12);
         self.images["Enemy",2].start(12);

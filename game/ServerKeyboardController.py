@@ -19,6 +19,7 @@ from pygame import (K_s as START_GAME,
 
 class ServerController(object):
     def __init__(self, realm, view):
+        print('server cont!')
         self.realm = realm
         self.view = view
         

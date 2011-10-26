@@ -33,11 +33,11 @@ class Environment(pb.Cacheable, pb.RemoteCache):
     def _turnOnLight(self):
         self.lightOn = True
 
-    def observe_blinkLight(self, player):
-        if player.self:
-            print "blinky"
-            self.lightOn = False
-            reactor.callLater(.2, self._turnOnLight)
+    def observe_blinkLight(self, player = None):
+        #if player.self:
+        print "blinky"
+        self.lightOn = False
+        reactor.callLater(.4, self._turnOnLight)
 
     def startGame(self):
         # I'm not sure that this is best way to do this,

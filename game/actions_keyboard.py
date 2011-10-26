@@ -80,7 +80,6 @@ class PlayerController(object):
             directionX = 1
 
         direction = Vector2D(directionX, directionY)#destination - self.position
-
         #if direction < (self.speed * dt):
         #    self.position = destination
         #else:
@@ -172,6 +171,7 @@ class PlayerController(object):
             if (event.type == pygame.QUIT) or ((event.type == pygame.KEYDOWN) and (event.key == QUIT)):
                 reactor.stop()
                 sys.exit()
+                
             if (event.type == pygame.KEYDOWN):
                 if (event.key in self._actions):
                     self._actionQueue.append(event.key)
