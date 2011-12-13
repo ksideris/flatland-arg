@@ -1,0 +1,21 @@
+*.dylib
+*.21
+*.dblite
+*.o
+*.a
+*.swp
+*.orig
+*.dSYM
+*.mode1v3
+*tehansen.pbxuser
+*.core
+build
+movid
+ptypes_test
+ptypesn_test
+
+# cause of window, try to not show differences...
+# but no help for already commited files...
+contrib/WOscLib-*
+contrib/jpeg-8*
+contrib/libevent*

@@ -1,3 +1,15 @@
+'''
+This file includes the player, the buildings, and the resource pool.
+
+Drawing, sound playing, and the various player/building state is contained here.
+
+In regards to sound playing, you will notice that most functions have a playSound function.
+This is present because when you're testing, and have the player and the server running
+on the same computer, both the servers copy of the player, and the clients copy of the player
+will attempt to play the sound, and since the computer only has one mixer, it doesn't really
+work, and thus, sounds only play for the client.
+'''
+
 import math
 import pygame.mixer
 from twisted.internet import defer
@@ -107,6 +119,8 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.lastAction = None
         #self.sounds = None
 
+        self.player_id = 1
+
         #sound related state
         self.playingBuildingCompleteSound = False
         self.scanFadeOutOk = False
@@ -114,7 +128,6 @@ class Player(pb.Cacheable, pb.RemoteCache):
         self.hadResources = False
         #self.pointsFullPlayOk = True
         #self.sounds = dict()
-        #self.sounds['Building 3-Sided'] = pygame.mixer.Sound("data/sfx/alex_sfx/Building 3-sided.wav")
 
         #sound related state
         self.playingBuildingCompleteSound = False

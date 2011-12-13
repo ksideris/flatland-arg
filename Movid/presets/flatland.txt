@@ -1,0 +1,28 @@
+pipeline create Camera v
+
+#pipeline create Image v
+#pipeline set v filename media/test_img.bmp
+
+pipeline create GrayScale g
+pipeline create ThresholdColored t
+pipeline set t threshold 50
+pipeline set t type tozero
+
+pipeline create FlatlandColorPairFinder f
+
+pipeline create BlobFinder b
+pipeline set b min_size 50
+pipeline set b max_size 200
+
+pipeline create Tuio tu
+pipeline set tu ip 192.168.1.100
+pipeline set tu port 3333
+pipeline create ImageDisplay d1
+pipeline create ImageDisplay d2
+
+pipeline connect v 0 t 0
+pipeline connect v 0 f 0
+#pipeline connect g 0 b 0
+pipeline connect t 0 d1 0
+pipeline connect f 0 d2 0
+pipeline connect f 1 tu 0

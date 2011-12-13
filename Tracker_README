@@ -1,0 +1,16 @@
+Tracking is done via this weird wrapper for openCV called Movid.  Movid breaks up openCV into modules.  You configure these modules in special text files.
+
+A special new module was created for tracking and identifying LED pairs, it is located in src/modules, and is called moFlatlandColorPairFinder (.cpp, and .h).
+
+The module configuration is located in presets/flatland.txt.  It's just a camera connected to a colored threshold, connected the color pair finder, connected to a module that outputs Tuio messages.
+
+To run movid tracking, cd into Movid, and run
+	./movid -l presets/flatland.txt
+
+Not the colored threshold doesn't work very well, except on pure reds, blues, or greens, as each channel is thresholded separately.  This causes some color flickering which creates problems particularly with white, and yellow. Instead, each pixel should be thresholded by its total intensity.
+
+================================
+Alternatively tracking is can be performed using black and white fiducials using a program called reacTIVision.  Just google, download the program, print out the markers, and run the application with a camera plugged in.  It sends out Tuio messages by default.
+===============================
+
+Unfortunately you need to comment and uncomment some code in TuioListener.py depending on which method you use.  Check the comments at the top of that file for more information.

@@ -1,0 +1,31 @@
+pipeline create Camera cam
+pipeline create YCrCbThreshold thresh
+pipeline create Smooth smooth
+pipeline create FingerTipFinder fingertips
+#pipeline create Combine comb
+pipeline create ImageDisplay win
+pipeline create GreedyBlobTracker tracker
+pipeline create Tuio tuio
+
+pipeline set cam index 1
+pipeline set smooth filter median
+pipeline set smooth size 3
+
+pipeline set thresh Cb_max 135
+pipeline set thresh Cb_min 100
+pipeline set thresh Cr_max 190
+pipeline set thresh Cr_min 130
+pipeline set thresh Y_max 255
+pipeline set thresh Y_min 0
+
+pipeline set cam use_thread 1
+pipeline set tuio use_thread 1
+
+pipeline connect cam 0 thresh 0
+pipeline connect thresh 0 smooth 0
+pipeline connect smooth 1 fingertips 0
+#pipeline connect fingertips 0 comb 0
+pipeline connect fingertips 1 tracker 0
+pipeline connect tracker 0 tuio 0
+#pipeline connect comb 0 win 0
+

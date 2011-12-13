@@ -1,5 +1,7 @@
 """
-Input handling via wand
+actions_wand handles input from phones, in particular interprets accelerometer data
+for gesture recognition.  The heavy lifting for gesture recognition happens in function
+getAccelReading()
 """
 
 from twisted.internet.task import LoopingCall
@@ -54,6 +56,7 @@ class PlayerController(object):
         self._lastAction = None
 
         #Added these for gesture recognition
+        # These are for a more sophisticated gesture recognition technique, that was hastily abandoned.
         self._scan = self._loadPattern("game/pickles/scanRightPattern.pickle")
         self._upgrade = self._loadPattern("game/pickles/scanLeftPattern.pickle")
         self._attack = self._loadPattern("game/pickles/attackPattern.pickle")
@@ -104,6 +107,11 @@ class PlayerController(object):
             #self.position += (dt * self.speed) * direction.norm()
             pass
 
+        #if direction < (self.speed * dt):
+        #    self.position = destination
+        #else:
+        #    self.position += (dt * self.speed) * direction.norm()
+
         #=======================================================================
         directionX = 0
         directionY = 0
@@ -120,15 +128,13 @@ class PlayerController(object):
 
         direction = Vector2D(directionX, directionY)#destination - self.position
 
-        #if direction < (self.speed * dt):
-        #    self.position = destination
-        #else:
+        
+        
+        #if directionX != 0 or directionY != 0:
         #    self.position += (dt * self.speed) * direction.norm()
-        if directionX != 0 or directionY != 0:
-            self.position += (dt * self.speed) * direction.norm()
         #=======================================================================
 
-        self.perspective.callRemote('updatePosition', self.position)
+        #self.perspective.callRemote('updatePosition', self.position)
         #self.view.setCenter(self.position)
 
 
@@ -166,6 +172,15 @@ class PlayerController(object):
         self._currentAction = None
         return
 
+
+
+'''
+This is the function that actually interprets the accelerometer data.
+
+It currently does something a little dumb and only examines data over
+non-overlapping windows of time where as it should use more of sliding
+window scheme, which would probably have lower latency.
+'''
     def getAccelReading(self):
 
         self.nReadings = (self.nReadings + 1) % ACCEL_READ_WINDOW_LENGTH
@@ -284,7 +299,7 @@ class PlayerController(object):
         if self._currentAction == None:
             pass
             #check for the upgrading gesture (static)
-        if lastOne.index(max(lastOne)) == 0 and lastOne[0] > 900 and not movingTooMuchForUpgrade and movingSlowEnoughForUpgrade:
+        if lastOne.index(max(lastOne)) == 0 and lastOne[0] > 900 and not movingTooMuchForUpgrade:# and movingSlowEnoughForUpgrade:
             print("upgrade")
             self._startedAction(UPGRADE)
                 #
@@ -414,7 +429,6 @@ class PlayerController(object):
         if the area is different from the last area checked, record the transition in self._sampleData
         """
         keys = ['x', 'y', 'z']
-        #TODO [!!!] restore this line!
         data = self._readSerial()
 
         data = {'x': data[0], 'y': data[1], 'z': data[2]}

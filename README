@@ -1,3 +1,39 @@
-This is a complete rewrite of Flatland ARG!
+------- Overview:
 
-See http://games.ucla.edu/games/flatland/
+There are 3 distinct programs that make up flatland:
+	- The tracker
+	- The game server
+	- The player(s)
+
+------- The trakcer:
+
+The tracker, as you would expect processes the camera input and passes on player positions to the server.  The tracker also does things like smooth and rectify positions, handle player disappearances, etc...  The game server should be able to blindly accept the output from the tracker.  More information about the tracking code can be found in <WHERE>
+
+------- The game server:
+
+The game server controls the top level game, as well as providing the spectator view, and controls for starting, stopping and resetting the game.  To run the server, simply cd into flatland-arg, and run "./network-server".  The important files are chatserver.py, environment.py, and ServerKeyboardController.py, in the game directory.
+
+------- The player(s):
+
+Each player will of course run their own client of the game server/tracker. You run a client by running ./network-client.  The relevant files are chatclient.py, player.py, actions_keyboard.py, actions_wand.py, and environment.py.
+
+------- Running the game:
+
+# run the tracker
+
+	# if using movid:
+
+	cd Movid
+	./movid -l presets/colorLED.txt
+
+	# if using Reactivision, just double click the reacTIVision application to run
+
+# run the server
+
+	cd flatland-arg
+	./network-server
+
+# run the client(s)
+
+	cd flatland-arg
+	./network-client

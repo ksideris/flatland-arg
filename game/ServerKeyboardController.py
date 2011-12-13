@@ -1,3 +1,6 @@
+'''
+ServerKeyboardController allows you to control the game via the keyboard.
+'''
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 import math
@@ -28,7 +31,7 @@ class ServerController(object):
         Handle currently available pygame input events.
         """
         for event in pygame.event.get():
-            if (event.type == pygame.QUIT) or ((event.type == pygame.KEYDOWN) and (event.key == QUIT)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == QUIT):
                 reactor.stop()
                 sys.exit()
                 

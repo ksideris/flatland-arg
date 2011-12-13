@@ -46,7 +46,7 @@ class Tracker(FloatLayout):
         #self.real_start_x = 0
         self.real_width = 20
 
-        print self.real_height, self.real_width
+        #print self.real_height, self.real_width
 
         self._ready = False;
         self._corners = [];
@@ -92,10 +92,10 @@ class Tracker(FloatLayout):
         self.width1 = self._corners[1].x - self._corners[0].x
         self.width2 = self._corners[3].x - self._corners[2].x
 
-        print (self._corners[0].x, self._corners[0].y)
-        print (self._corners[1].x, self._corners[1].y)
-        print (self._corners[2].x, self._corners[2].y)
-        print (self._corners[3].x, self._corners[3].y)
+        #print (self._corners[0].x, self._corners[0].y)
+        #print (self._corners[1].x, self._corners[1].y)
+        #print (self._corners[2].x, self._corners[2].y)
+        #print (self._corners[3].x, self._corners[3].y)
 
 
     def rectify(self, touch):
@@ -113,6 +113,10 @@ class Tracker(FloatLayout):
         y = self.real_start_y + (self.real_height * y_percent)
         x = self.real_start_x + (self.real_width * x_percent)
 
+        #TODO rectify smarter
+        x = touch.x
+        y = touch.y
+
         return x, y
 
     def isCorner(self, touch):
@@ -129,19 +133,22 @@ class Tracker(FloatLayout):
         return False
 
     def on_touch_down(self, touch):
-        ud = touch.ud
+        pass
+        '''ud = touch.ud
         ud['group'] = g = str(touch.uid)
 
-        if not self._ready:
-            self._init_corner(touch)
-            return;
+        #if not self._ready:
+        #    self._init_corner(touch)
+        #    return;
 
-        if self.numCorners != 4 and self.isCorner(touch):
-            self._init_corner(touch)
-            return
+        #if self.numCorners != 4 and self.isCorner(touch):
+        #    self._init_corner(touch)
+        #    return
 
-        x, y = self.rectify(touch)
-        print x, y
+        #x, y = self.rectify(touch)
+        x = touch.x
+        y = touch.y
+        print "TEH PTS: ", touch.x, touch.y
 
         ud = touch.ud
         ud['group'] = g = str(touch.uid)
@@ -153,17 +160,30 @@ class Tracker(FloatLayout):
                 pointsize = 5,
                 group=g)
 
-        self.send({'type': 'new', 'id': touch.uid, 'pos': (x, y)})
+        #self.send({'type': 'new', 'id': touch.uid, 'pos': (x, y)})
+        '''
 
     def on_touch_move(self, touch):
         if touch in self._corners:
             return
 
-        x, y = self.rectify(touch)
+        #x, y = self.rectify(touch)
+        x = touch.x
+        y = touch.y
+        print "TEH PTS: ", touch.x, touch.y
 
         ud = touch.ud
+        ud['group'] = g = str(touch.uid)
+        self.canvas.remove_group(ud['group'])
+        with self.canvas:
+            ud['color'] = Color(touch.uid, 1, 1, mode='hsv', group=g)
+            ud['lines'] = Point(
+                points = (x, y),
+                source = 'particle.png',
+                pointsize = 5,
+                group=g)
 
-        try:
+        '''try:
             ud['lines'] = Point(
                 points = (x, y),
                 source = 'particle.png',
@@ -171,11 +191,14 @@ class Tracker(FloatLayout):
                 group=ud['group'])
         except GraphicException:
             pass
+            '''
 
         self.send({'type': 'mov', 'id': touch.uid, 'pos': (x, y)})
 
 
     def on_touch_up(self, touch):
+        pass
+        '''
         if touch in self._corners:
             #self.numCorners -= 1
             return
@@ -184,14 +207,18 @@ class Tracker(FloatLayout):
         self.canvas.remove_group(ud['group'])
 
         self.send({'type': 'del', 'id': touch.uid})
+        '''
 
 
     def update_touch_label(self, label, touch):
+        pass
+        '''
         label.text = 'ID: %s\nPos: (%d, %d)\nClass: %s' % (
             touch.id, touch.x, touch.y, touch.__class__.__name__)
         label.texture_update()
         label.pos = touch.pos
         label.size = label.texture_size[0] + 20, label.texture_size[1] + 20
+        '''
 
 
 class TrackerApp(App):

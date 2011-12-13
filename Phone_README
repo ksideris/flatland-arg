@@ -1,0 +1,25 @@
+Phone notes:
+
+------- To ssh onto the phone:
+
+* Open up terminal on the phones, input
+	sudo gainroot #password is 'danger' if it asks
+
+* Now, input 
+	ifconfig
+
+* It will output a bunch of information, you need to find the ip under 'inet addr'
+
+* Now, open the command line on your computer, and do ssh root@<the ip from above>
+
+* Flatland lives in /home/user/flatland-arg , where you can run the client just as you would on a real computer
+
+------- Random notes:
+
+* Both the server computer, and the phone must be connected to the flatland-arg network (the one created by the purple router)
+
+* If you have issues with the phone screen turning off once you close the keyboard, you will need to install 'simple brightness app'
+
+http://maemo.org/downloads/product/Maemo5/simple-brightness-applet/
+
+To install it, after you 'sudo gainroot' do input 'apt-get install simple-brightness-applet'.  You can then open up the applet from the status bar, and check the box that says 'keep display on'.

@@ -1,5 +1,7 @@
 """
-Input handling via keyboard
+actions_keyboard Allows you to control a player with the keyboard.
+
+Move with the arrow keys, build with D, attack with A, etc...
 """
 
 from twisted.internet.task import LoopingCall
@@ -87,7 +89,7 @@ class PlayerController(object):
         if directionX != 0 or directionY != 0:
             self.position += (dt * self.speed) * direction.norm()
 
-        self.perspective.callRemote('updatePosition', self.position)
+        #self.perspective.callRemote('updatePosition', self.position)
         #self.view.setCenter(self.position)
 
 

@@ -1,0 +1,25 @@
+#pipeline create Camera v
+
+pipeline create Video v
+pipeline set v filename media/blob.avi
+
+#pipeline create Image v
+#pipeline set v filename media/blob.png
+
+pipeline create GrayScale g
+pipeline create Threshold t
+pipeline set t threshold 75
+pipeline create BlobFinder b
+pipeline create GreedyBlobTracker tr
+pipeline create Tuio tu
+pipeline set tu ip 192.168.1.100
+pipeline create ImageDisplay d1
+pipeline create ImageDisplay d2
+
+pipeline connect v 0 g 0
+pipeline connect g 0 t 0
+pipeline connect t 0 b 0
+pipeline connect t 0 d1 0
+pipeline connect b 0 d2 0
+pipeline connect b 1 tr 0
+pipeline connect tr 0 tu 0

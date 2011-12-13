@@ -1,3 +1,8 @@
+'''
+This module imports all the graphics/animations and makes them globally available to the rest of the code.
+
+The sounds should probably be moved here too.
+'''
 from animation import Image, Animation, LoopingAnimation
 import pygame.mixer
 
