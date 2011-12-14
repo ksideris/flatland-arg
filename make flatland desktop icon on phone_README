@@ -1,0 +1,3 @@
+Make a desktop icon for flatland on the phones:
+
+copy flatland.deskop into /usr/share/applications/hildon on the phones.  Flatland will appear on the desktop with the facebook icon.  Make sure you've copied all the code into /home/user/flatland-arg as usual
