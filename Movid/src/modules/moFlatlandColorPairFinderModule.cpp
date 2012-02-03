@@ -61,6 +61,8 @@ moFlatlandColorPairFinderModule::moFlatlandColorPairFinderModule() : moImageFilt
 	this->properties["max_size"] = new moProperty(50 * 50);
 	this->properties["num_players"] = new moProperty(0);
 	this->properties["pair_distance"] = new moProperty(60);
+	this->properties["color"] = new moProperty("RGB");
+	this->properties["color"]->setChoices("RGB;HSV;YCBCR");
 	this->frameCounter = 0;
 }
 
@@ -304,7 +306,17 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 	int max_size = this->property("max_size").asInteger();
 	CvSeq *cur_cont = contours;
 
+	IplImage *tmp = cvCreateImage(cvGetSize(src),src->depth,src->nChannels);
 	
+	 std::string ColorMode = this->property("color").asString();
+	if(ColorMode == "HSV")
+		cvCvtColor(src, tmp, CV_RGB2HSV);
+	else if(ColorMode == "YCBCR")
+		cvCvtColor(src, tmp, CV_RGB2YCrCb);
+
+	cvCopy(src,tmp);
+	
+	//convert Color for image
 		
 /////////////////////////////////////////////////////////////////////////////////////
 	//Step 3 check window around contour centers and find color

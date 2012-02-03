@@ -4,7 +4,7 @@
 #pipeline set v filename media/test_img.bmp
 
 pipeline create Video v
-pipeline set v filename media/simple-move.avi
+pipeline set v filename ../../recordings/proximity.avi
 
 pipeline create GrayScale g
 pipeline create ThresholdColored t
@@ -15,7 +15,7 @@ pipeline set t type tozero
 pipeline create FlatlandColorPairFinder f
 pipeline set f pair_distance 60
 pipeline set f num_players 2
-
+pipeline set f color HSV
 
 pipeline create BlobFinder b
 pipeline set b min_size 50
