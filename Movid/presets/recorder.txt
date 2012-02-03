@@ -1,0 +1,8 @@
+pipeline create Camera camera
+pipeline create ImageDisplay window
+pipeline connect camera 0 window 0
+
+pipeline create Video video
+pipeline set video filename media/blob.avi
+
+pipeline connect window 0 video 0

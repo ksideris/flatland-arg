@@ -21,6 +21,26 @@
 
 #include "moImageFilterModule.h"
 #include "../moDataGenericContainer.h"
+#include <math.h>
+
+struct ColoredPt // Storage for the blobs
+{
+        double red;
+        double green;
+        double blue;
+	double x;
+	double y;
+	int color;
+};
+struct Player // Storage for the players
+{
+        ColoredPt point1;
+	ColoredPt point2;
+	double x;
+	double y;
+	int id;
+	bool updated;
+};
 
 class moFlatlandColorPairFinderModule : public moImageFilterModule{
 public:
@@ -35,16 +55,20 @@ protected:
 	void applyFilter(IplImage*);
 	
 	void allocateBuffers();	
-
+	bool initialized;
+	std::vector<Player> Players;	
 	CvMemStorage *storage;
 	moDataGenericList *blobs;
 	moDataGenericList *players;
 
 	moDataStream *output_data;
-
+	
+	
 	bool compareColorPair(int colorA1, int colorA2, int colorB1, int colorB2);
-	int getPlayerIndex(int color1, int color2);
-
+	int getPlayerIndex(ColoredPt color1, ColoredPt color2, double avX,double avY,bool init);
+	int FindPairs(std::vector<ColoredPt> cPts,bool init);
+	void MatchPlayers(int *pairs,std::vector<ColoredPt> cPts,bool init);
+	//void MatchPlayers(int *pairs,std::vector<ColoredPt> cPts);
 	void imagePreprocess(IplImage *src);
 	int matchColor(int r, int g, int b);
 	MODULE_INTERNALS();
