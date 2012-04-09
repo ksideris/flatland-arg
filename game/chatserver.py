@@ -105,19 +105,17 @@ controller.go()
 
 class MovidTuioListener(TuioListener):
     def idAndPositionCallback(self, ids, positions):
-        #print '////////////////////////////////////////////////////////'
-        for i in range(len(ids)):
+    	for i in range(len(ids)):
             #print 'id: ', ids[i], ' > ', positions[i]
             
             px = 50*(positions[i][0] - .5)
             py = 50*(positions[i][1] - .5)
-            
             env.updatePlayerPositionByIndex(ids[i]%10, Vector2D(px, py))
 
 # [!!!] Listen for TUIO events from the tracker
 tu = MovidTuioListener(None, # listen at IP:port
-#'192.168.1.100:3333') #This is the ip:port for Movid
- '127.0.0.1:3333') # reactiVISION's deafault ip and port
+'127.0.0.1:3333') #This is the ip:port for Movid
+# '127.0.0.1:7500') # reactiVISION's deafault ip and port
 tu.start()
 
 def readTrackPoints():

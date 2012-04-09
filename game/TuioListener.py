@@ -170,10 +170,10 @@ class TuioListener:
                 #player_position = [ value[1][2], value[1][3] ]
                 
                 # The Reactivision messages are formatted thus: 
-                player_id = value[1][2]
-                player_position = [ value[1][3], value[1][4] ]
+                player_id = value[1][1]
+                player_position = [ value[1][2], value[1][3] ]
                 
-                
+               
                 positions.append( player_position )
                 ids.append( player_id )
                 idx = idx + 1
