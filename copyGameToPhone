@@ -1,4 +1,4 @@
 #bin/bash
 cd `dirname $0`
-scp -r game root@"$1":/home/user/flatland-arg
+scp -r ./ root@"$1":/home/user/flatland-arg
 scp -r flatland.desktop root@"$1":/usr/share/applications/hildon

@@ -1,0 +1,5 @@
+step 1. install openssh via application manager
+step 2. add 
+deb http://repository.maemo.org/extras-testing/ fremantle free non-free
+to /etc/apt/sources.list
+step 3. run apt-get install python python-twisted-web python-pygame (or something of this sort)
