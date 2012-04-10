@@ -25,21 +25,36 @@
 
 struct ColoredPt // Storage for the blobs
 {
+
         double red;
         double green;
         double blue;
 	double x;
 	double y;
 	int color;
+	double * histogram;
+	/*
+	ColoredPt(int no)
+	{
+		this->histogram = new double[no];
+		for(int i=0;i<no;i++)
+			this->histogram[i]=0;
+	}
+	~ColoredPt()
+	{
+		delete [] this->histogram;
+	}*/
+
 };
 struct Player // Storage for the players
 {
-        ColoredPt point1;
-	ColoredPt point2;
+        ColoredPt  point1;
+	ColoredPt  point2;
 	double x;
 	double y;
 	int id;
 	bool updated;
+	
 };
 
 class moFlatlandColorPairFinderModule : public moImageFilterModule{
@@ -65,9 +80,9 @@ protected:
 	
 	
 	bool compareColorPair(int colorA1, int colorA2, int colorB1, int colorB2);
-	int getPlayerIndex(ColoredPt color1, ColoredPt color2, double avX,double avY,bool init);
-	int FindPairs(std::vector<ColoredPt> cPts,bool init);
-	void MatchPlayers(int *pairs,std::vector<ColoredPt> cPts,bool init);
+	int getPlayerIndex(ColoredPt color1, ColoredPt color2, double avX,double avY,bool init,bool reset);
+	int FindPairs(std::vector<ColoredPt> cPts,bool init,int noframes);
+	void MatchPlayers(int *pairs,std::vector<ColoredPt> cPts,bool init,bool reset);
 	//void MatchPlayers(int *pairs,std::vector<ColoredPt> cPts);
 	void imagePreprocess(IplImage *src);
 	int matchColor(int r, int g, int b);

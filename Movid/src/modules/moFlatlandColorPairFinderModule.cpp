@@ -38,7 +38,7 @@ MODULE_DECLARE(FlatlandColorPairFinder, "native", "ColorPair Description");
 #define WHITE 3
 #define MAX_N_LIGHTS 20
 #define UNRECOGNIZED_PLAYER_COLOR_PAIR -1
-
+#define USE_HISTOGRAM false
 moFlatlandColorPairFinderModule::moFlatlandColorPairFinderModule() : moImageFilterModule(){
 
 	MODULE_INIT();
@@ -61,6 +61,12 @@ moFlatlandColorPairFinderModule::moFlatlandColorPairFinderModule() : moImageFilt
 	this->properties["max_size"] = new moProperty(50 * 50);
 	this->properties["num_players"] = new moProperty(0);
 	this->properties["pair_distance"] = new moProperty(60);
+	this->properties["histogramBins"] = new moProperty(20);
+	this->properties["DilationRounds"] = new moProperty(1);
+	this->properties["GaussianFilterSize"] = new moProperty(1);
+	this->properties["PositionWeight"] = new moProperty(1);
+	this->properties["ColorWeight"] = new moProperty(1);
+	this->properties["EnableReset"] = new moProperty(true);
 	this->properties["color"] = new moProperty("RGB");
 	this->properties["color"]->setChoices("RGB;HSV;YCBCR");
 	this->frameCounter = 0;
@@ -95,10 +101,14 @@ Parameters:
 return:
 	id of the matched player	
 ************************************************************/
-int moFlatlandColorPairFinderModule::getPlayerIndex(ColoredPt color1, ColoredPt color2 ,double avX,double avY,bool init)
+int moFlatlandColorPairFinderModule::getPlayerIndex(ColoredPt color1, ColoredPt color2 ,double avX,double avY,bool init,bool reset)
 {	
 
 	int id=-1;
+	double pos_weight = this->property("PositionWeight").asDouble();
+	double color_weight = this->property("ColorWeight").asDouble();	
+	bool enable_reset = this->property("EnableReset").asBool();	
+	
 		
 	if(init) // If we are just initializing , we need to create a list with all the players. The indices are assigned serially upon discovery of player
 	{	
@@ -130,26 +140,32 @@ int moFlatlandColorPairFinderModule::getPlayerIndex(ColoredPt color1, ColoredPt 
 			
 		if(!Players[k].updated)
 		{
-			double dist1 = pow(Players[k].point1.red-color1.red,2)+pow(Players[k].point1.green-color1.green,2)+pow(Players[k].point1.blue-color1.blue,2)+pow(Players[k].point2.red-color2.red,2)+pow(Players[k].point2.green-color2.green,2)+pow(Players[k].point2.blue-color2.blue,2);
-			double dist2 = pow(Players[k].point2.red-color1.red,2)+pow(Players[k].point2.green-color1.green,2)+pow(Players[k].point2.blue-color1.blue,2)+pow(Players[k].point1.red-color2.red,2)+pow(Players[k].point1.green-color2.green,2)+pow(Players[k].point1.blue-color2.blue,2);
-			dist1=sqrt(dist1);
-			dist2=sqrt(dist2);
-			
-			//printf("Pl%d   Point1   :   %6.3f %6.3f %6.3f\n",k,Players[k].point1.red,Players[k].point1.green,Players[k].point1.blue);
-			//printf("Pl%d   Point2   :   %6.3f %6.3f %6.3f\n",k,Players[k].point2.red,Players[k].point2.green,Players[k].point2.blue);
-			//printf("Curr.  Point1   :   %6.3f %6.3f %6.3f\n",color1.red,color1.green,color1.blue);
-			//printf("Curr.  Point2   :   %6.3f %6.3f %6.3f\n",color2.red,color2.green,color2.blue);
-			
-			if(dist1>=dist2 && dist2<mindistance)
+			if(~USE_HISTOGRAM)
 			{
-				mindistance=dist2;
-				index=k;
-			}
-			else if(dist2>=dist1 && dist1<mindistance)
-			{
-				mindistance=dist1;
-				index=k;
-			}
+				double color_dist1 = pow(Players[k].point1.red-color1.red,2)+pow(Players[k].point1.green-color1.green,2)+pow(Players[k].point1.blue-color1.blue,2)+pow(Players[k].point2.red-color2.red,2)+pow(Players[k].point2.green-color2.green,2)+pow(Players[k].point2.blue-color2.blue,2);
+				double color_dist2 = pow(Players[k].point2.red-color1.red,2)+pow(Players[k].point2.green-color1.green,2)+pow(Players[k].point2.blue-color1.blue,2)+pow(Players[k].point1.red-color2.red,2)+pow(Players[k].point1.green-color2.green,2)+pow(Players[k].point1.blue-color2.blue,2);
+				color_dist1=sqrt(color_dist1);///27.65;
+				color_dist2=sqrt(color_dist2);///27.65;
+			
+				double position_dist= sqrt( pow(Players[k].x-avX,2) + pow(Players[k].y-avY,2) );
+				if(reset && enable_reset)
+					{pos_weight=0;printf("****reset\n");}
+				double dist1 = color_weight*color_dist1 + pos_weight*position_dist;
+				double dist2 = color_weight*color_dist2 + pos_weight*position_dist;
+				
+				if(dist1>=dist2 && dist2<mindistance)
+				{
+					mindistance=dist2;
+					index=k;
+					//printf("DistanceTotal: %f,  color: %f , position: %f\n",mindistance,color_dist2 ,position_dist);
+				}
+				else if(dist2>=dist1 && dist1<mindistance)
+				{
+					mindistance=dist1;
+					index=k;
+					//printf("DistanceTotal: %f,  color: %f , position: %f\n",mindistance,color_dist1 ,position_dist);
+				}
+				}
 		}
 		}
 		if(index>-1) // when the min distance is found , update the 
@@ -182,7 +198,7 @@ Parameters:
 return:
 	void	
 ************************************************************/
-void moFlatlandColorPairFinderModule::MatchPlayers(int *pairs,std::vector<ColoredPt> cPts,bool init)
+void moFlatlandColorPairFinderModule::MatchPlayers(int *pairs,std::vector<ColoredPt> cPts,bool init,bool reset)
 {
 
 	// look at pair colors and determine player number
@@ -198,7 +214,7 @@ void moFlatlandColorPairFinderModule::MatchPlayers(int *pairs,std::vector<Colore
 			double avX = (cPts[i].x + cPts[pairs[i]].x)/2;
 			double avY = (cPts[i].y + cPts[pairs[i]].y)/2;	
 			
-			getPlayerIndex(cPts[i], cPts[pairs[i]],avX,avY,init);
+			getPlayerIndex(cPts[i], cPts[pairs[i]],avX,avY,init,reset);
 			
 			
 		}
@@ -216,7 +232,7 @@ Parameters:
 return:
 	int nPlayersFound - number of player found	
 ************************************************************/
-int moFlatlandColorPairFinderModule::FindPairs(std::vector<ColoredPt> cPts,bool init)
+int moFlatlandColorPairFinderModule::FindPairs(std::vector<ColoredPt> cPts,bool init,int noframes)
 {
 	int nPlayersFound=0;
 	int pairs[MAX_N_LIGHTS];
@@ -268,7 +284,7 @@ int moFlatlandColorPairFinderModule::FindPairs(std::vector<ColoredPt> cPts,bool 
 		
 	}
 	
-	MatchPlayers(pairs,cPts,init);
+	MatchPlayers(pairs,cPts,init,noframes%30==0);
 	
 	return nPlayersFound;
 }
@@ -327,10 +343,23 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 
 	//printf("==================================\n");
 	int blobi = 0;
+	int noHistBins = this->property("histogramBins").asInteger();	
+	
+	
+	
 	while (cur_cont != 0) 
 	{
 		CvRect rect	= cvBoundingRect(cur_cont, 0);
 		size = rect.width * rect.height;
+		struct ColoredPt thisPt;
+		if(USE_HISTOGRAM)
+		{
+					
+			thisPt.histogram = new double[noHistBins];
+			for(int i=0;i<noHistBins;i++)
+				thisPt.histogram[i]=0;
+		}
+		
 		//printf(":: %d\n", size);
 		if ((size >= min_size) && (size <= max_size)) {
 
@@ -359,21 +388,52 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 					{
 						weight = 1;
 					}
-					
-					if (colorNorm > 30)
+					if(ColorMode == "HSV" && redVal>30)
 					{
-						red += weight*redVal/colorNorm;
-						green += weight*greenVal/colorNorm;
-						blue += weight*blueVal/colorNorm;
+						red += weight*redVal;///colorNorm;
+						green += weight*greenVal;///colorNorm;
+						blue += weight*blueVal;///colorNorm;
 
 						pixelcount++;
 					}
+					else if (colorNorm > 30)
+					{
+						red += weight*redVal;///colorNorm;
+						green += weight*greenVal;
+						blue += weight*blueVal;//colorNorm;
+
+						pixelcount++;
+					}
+					
+					/************************/
+					/*****HISTOGRAM CODE*****/
+					if(USE_HISTOGRAM)
+					{
+						int hue    = ( ((uchar*)(src->imageData + src->widthStep*y))[x*3+0] );
+						int Value  = ( ((uchar*)(src->imageData + src->widthStep*y))[x*3+2] );
+					
+					
+						if(Value>30)
+						{
+							int binindex = hue/(255/noHistBins);
+							thisPt.histogram[binindex] +=1;
+					
+						}
+					}
+					/************************/
+					
+					
+					
 				}
 			}
-			red = red/pixelcount;
-			green = green/pixelcount;
-			blue = blue/pixelcount;
+			red = red;///pixelcount;
+			green = green;///pixelcount;
+			blue = blue;///pixelcount;
+			if(ColorMode == "HSV")
+			{
 			
+			red = 0;
+			}
 		
 			if(red > green && red>blue)
 				blobColor=RED;
@@ -388,7 +448,7 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 		
 			blobi++;
 
-			struct ColoredPt thisPt;
+			
 
 			thisPt.red =red;
 			thisPt.green =green;
@@ -432,7 +492,7 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 	
 	if(!initialized)
 	{	
-			int players_found = FindPairs(cPts,true);
+			int players_found = FindPairs(cPts,true,frameCounter);
 			printf("No Players:%d\n",players_found);
 			if(players_found != num_players) // KEEP initializing as long as  we haven't reached the desired players
 			{
@@ -449,7 +509,7 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 	}
 	else
 	{
-		FindPairs(cPts,false);
+		FindPairs(cPts,false,frameCounter);
 	}
 	
 	moDataGenericList::iterator pit;
@@ -498,7 +558,7 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 	
 			
 		
-	//frameCounter++;
+	frameCounter++;
 	
 	
 	//commented code 3
@@ -526,6 +586,11 @@ void moFlatlandColorPairFinderModule::imagePreprocess(IplImage *src){
 
 //TODO : make the parameters accessible from the preset files
 
+double DilationRounds = this->property("DilationRounds").asDouble();	
+double GaussianFilterSize = this->property("GaussianFilterSize").asDouble();	
+
+
+	
 	IplConvKernel *element = 0;//the pointer for morphological strucutre
 	
 	//Then erode and dilate the image
@@ -534,9 +599,9 @@ void moFlatlandColorPairFinderModule::imagePreprocess(IplImage *src){
 
 	//cvErode(src, tmp, element,1);//erode the image
 	cvCopy(src,tmp);	
-	cvSmooth(src,src,CV_GAUSSIAN,9,0,0,0);//median filter, elliminate small noise
+	cvSmooth(src,src,CV_GAUSSIAN,GaussianFilterSize,0,0,0);//median filter, elliminate small noise
 
-	cvDilate(tmp, src, element,5);//dilate the image
+	cvDilate(tmp, src, element,DilationRounds);//dilate the image
 	cvReleaseImage(&tmp);
 
 }
