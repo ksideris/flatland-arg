@@ -4,7 +4,7 @@
 #pipeline set v filename media/test_img.bmp
 
 pipeline create Video v
-pipeline set v filename ../../recordings/proximity.avi
+pipeline set v filename ../../videos-konstantinos/EDAtestVideos/simple-move.avi
 
 pipeline create GrayScale g
 pipeline create ThresholdColored t
@@ -15,16 +15,16 @@ pipeline set t type tozero
 pipeline create FlatlandColorPairFinder f
 pipeline set f pair_distance 60
 pipeline set f num_players 2
-pipeline set f color HSV
+pipeline set f color RGB
 
 pipeline create BlobFinder b
 pipeline set b min_size 50
 pipeline set b max_size 200
 
 pipeline create Tuio tu
-pipeline set tu ip 192.168.1.100
+#pipeline set tu ip 127.0.0.1
 #192.168.1.100
-pipeline set tu port 3333
+#pipeline set tu port 3333
 pipeline create ImageDisplay d1
 pipeline create ImageDisplay d2
 

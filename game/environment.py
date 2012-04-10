@@ -339,10 +339,10 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
         # ======================================================================
         # draw draw white square for photo sensor
+	# DEPRECATED, white square no longer needed for tracking.
 
         sqrSz = 75
-
-        if not self.team == None:
+        if False: #not self.team == None:
             sensRect = pygame.Rect(0, 0, sqrSz + 5, sqrSz + 10)
             sensRect.right = 800
             sensRect.centery = 240

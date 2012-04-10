@@ -160,6 +160,7 @@ int moFlatlandColorPairFinderModule::getPlayerIndex(ColoredPt color1, ColoredPt 
 		Players[index].updated=true;
 		Players[index].x=avX;
 		Players[index].y=avY;
+		
 		int x=0;
 			
 		}
@@ -461,7 +462,7 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 	for(int i=0;i<Players.size();i++)
 	{
 		// Debugging info: Output Player ID on filtered image
-		Players[i].updated=false;
+		Players[i].updated =false;
 		CvFont font;
 		cvInitFont(&font, CV_FONT_HERSHEY_PLAIN, 1.7f, 1.7f, 0, 1, CV_AA);			
 		std::ostringstream labelStream;
@@ -472,15 +473,25 @@ void moFlatlandColorPairFinderModule::applyFilter(IplImage *src) {
 		// Convert Internal Player List to Output LIST (taken from Alex's code
 		moDataGenericContainer *player = new moDataGenericContainer();
 		player->properties["implements"] = new moProperty("pos");
-		player->properties["x"] = new moProperty(Players[i].x / src->width);
-		player->properties["y"] = new moProperty(Players[i].y / src->height);
+		player->properties["x"] = new moProperty(Players[i].x / (double) src->width );/// src->width);
+		player->properties["y"] = new moProperty(Players[i].y / (double) src->height);/// src->height);
 		player->properties["blob_id"] = new moProperty(Players[i].id);
 
 		std::string implements = player->properties["implements"]->asString();
-		// Indicate that the blob has been tracked, i.e. blob_id exists.
+		//// Indicate that the blob has been tracked, i.e. blob_id exists.
 		implements += ",tracked";
 		player->properties["implements"]->set(implements);
 		
+		/*
+		moDataGenericContainer *blob = new moDataGenericContainer();
+			blob->properties["implements"] = new moProperty("pos,size");
+			blob->properties["x"] = new moProperty((rect.x + rect.width / 2) / (double) src->width);
+			blob->properties["y"] = new moProperty((rect.y + rect.height / 2) / (double) src->height);
+			blob->properties["width"] = new moProperty(rect.width);
+			blob->properties["height"] = new moProperty(rect.height);
+			this->blobs->push_back(blob);
+		*/
+		printf("%f,%f,%d\n",Players[i].x /(double) src->width ,Players[i].y/(double)src->height,Players[i].id  );
 		this->players->push_back(player);
 		
 	}
