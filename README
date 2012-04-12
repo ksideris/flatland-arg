@@ -5,7 +5,7 @@ There are 3 distinct programs that make up flatland:
 	- The game server
 	- The player(s)
 
-------- The trakcer:
+------- The tracker:
 
 The tracker, as you would expect processes the camera input and passes on player positions to the server.  The tracker also does things like smooth and rectify positions, handle player disappearances, etc...  The game server should be able to blindly accept the output from the tracker.  More information about the tracking code can be found in <WHERE>
 

@@ -19,13 +19,22 @@ from twisted.internet import reactor
 from twisted.cred import credentials
 from twisted.internet.protocol import DatagramProtocol
 import pygame
-import os
+import os, sys, platform
 from game.player import _initSounds
 
 USE_FULL_SCREEN = False
 
-if os.environ.get("FARG_INPUT") == "wand":
+sys.stdout.write("os name: ")
+print os.name
+sys.stdout.write("platform name: ")
+print platform.platform()
+sys.stdout.write("machine name: ")
+print platform.machine()
+
+#if os.environ.get("FARG_INPUT") == "wand":
+if platform.machine() == "armv7l":
     from game.actions_wand import PlayerController
+    #from game.actions_keyboard import PlayerController
     USE_FULL_SCREEN = True
     print("full screen")
 else:

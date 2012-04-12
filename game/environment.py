@@ -170,6 +170,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         self.attackOk = True
 
     def startAttacking(self, player):
+        print str(player) + " is attacking"
 #        if player.action == None:
         player.setAction("Attacking", LoopingCall(self.attack, player))
         player.action.start(1.5, now=self.attackOk)
@@ -195,6 +196,9 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             hadNoBuilding = False
         else:
             action = "Building"
+            
+        print str(player) + " is " + action
+        
         player.setAction(action, LoopingCall(player.building.build, player))
         player.action.start(2, now=hadNoBuilding)
 

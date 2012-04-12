@@ -174,13 +174,15 @@ class PlayerController(object):
 
 
 
-'''
-This is the function that actually interprets the accelerometer data.
 
-It currently does something a little dumb and only examines data over
-non-overlapping windows of time where as it should use more of sliding
-window scheme, which would probably have lower latency.
-'''
+
+    '''
+    This is the function that actually interprets the accelerometer data.
+    
+    It currently does something a little dumb and only examines data over
+    non-overlapping windows of time where as it should use more of sliding
+    window scheme, which would probably have lower latency.
+    '''
     def getAccelReading(self):
 
         self.nReadings = (self.nReadings + 1) % ACCEL_READ_WINDOW_LENGTH

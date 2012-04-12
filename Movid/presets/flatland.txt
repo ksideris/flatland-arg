@@ -4,7 +4,7 @@
 #pipeline set v filename media/test_img.bmp
 
 pipeline create Video v
-pipeline set v filename ../../EDAtestVideos/proximity.avi
+pipeline set v filename /home/gameadmin/Desktop/videos-konstantinos/EDAtestVideos/withphone.avi
 
 pipeline create GrayScale g
 pipeline create ThresholdColored t
@@ -13,14 +13,14 @@ pipeline set t type tozero
 
 
 pipeline create FlatlandColorPairFinder f
-pipeline set f pair_distance 50
+pipeline set f pair_distance 60
 pipeline set f use_histogram false
-pipeline set f num_players 2
-pipeline set f DilationRounds 5
+pipeline set f num_players 4
+pipeline set f DilationRounds 7
 pipeline set f GaussianFilterSize 9
-pipeline set f PositionWeight 100
-pipeline set f EnableReset true
-pipeline set f ColorWeight 1
+pipeline set f PositionWeight 0
+pipeline set f EnableReset false
+pipeline set f ColorWeight 10
 pipeline set f color HSV
 
 pipeline create BlobFinder b
