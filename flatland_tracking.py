@@ -3,16 +3,16 @@ import cv , liblo, sys ,random,math
 
 ESC_KEY = 27
 USE_CAM =False
-VIDEO_FILE = '/home/costas/EDAtestVideos/withphone.avi'
+VIDEO_FILE = '/home/gameadmin/Desktop/videos-konstantinos/test_official_march2012.avi'#EDAtestVideos/withphone.avi'
 THRESHOLD_VALUE = 30
-COLOR_THRESHOLD_VALUE = 60
+COLOR_THRESHOLD_VALUE = 80
 EROSION_ROUNDS = 1
 DILATION_ROUNDS = 1
 GAUSSIAN_SIZE =3
-PAIR_RANGE =60
+PAIR_RANGE =20
 MATCHING_THRESHOLD = 60
-HISTORY_FRAMES=10
-SMOOTHING_WEIGHT = 0.01 # between 0,1
+HISTORY_FRAMES=3
+SMOOTHING_WEIGHT = 0.1 # between 0,1
 
 def LowPassFilter(signal):
 	
@@ -281,9 +281,9 @@ def main():
 			
 		cv.CvtColor(frame,frame,cv.CV_HSV2BGR);
 				
-		key = cv.WaitKey( 1000 / fps );  
+		key = cv.WaitKey( 1000 / fps ) & 0xFF;  
 		
-		if( key == 105 ):
+		if( key  == 105 ):
 			font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, .7, .7, 0, 1, 8) 
 			cv.PutText(frame,'To initialize, insert numbers for the Highlighted Player', (0,height-20),font,  cv.ScalarAll(125))
 			playerids = []
@@ -298,13 +298,13 @@ def main():
 				cv.ShowImage("Initialization Screen", copy)
 				key=-1
 				while(key < 48 or key > 57):
-					key = cv.WaitKey()
+					key = cv.WaitKey()& 0xFF
 					
 				playerids.append((key-48,cluster))					
 					
 				
 			print playerids
-			key = cv.WaitKey()
+			key = cv.WaitKey() & 0xFF
 			cv.DestroyWindow("Initialization Screen")
 			Players=InitializePlayers(Players,playerids,Blobs)
 			print Players
