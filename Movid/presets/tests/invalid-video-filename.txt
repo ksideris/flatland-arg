@@ -1,2 +1,0 @@
-pipeline create Video video
-pipeline set video filename invalid-filename!!

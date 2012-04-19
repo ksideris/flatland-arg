@@ -29,6 +29,10 @@ from twisted.internet.protocol import DatagramProtocol
 from game.ServerKeyboardController import ServerController
 
 from vector import Vector2D
+#costas
+from TrackingServer import *
+
+
 
 MAX_DISTANCE2 = 5
 MAX_SPEED = 10
@@ -102,7 +106,7 @@ view = Window(env)
 # [!!!] initialize and run the server keyboard listener
 controller = ServerController(realm, view)
 controller.go()
-
+'''
 class MovidTuioListener(TuioListener):
     def idAndPositionCallback(self, ids, positions):
     	for i in range(len(ids)):
@@ -116,10 +120,28 @@ class MovidTuioListener(TuioListener):
 tu = MovidTuioListener(None, # listen at IP:port
 '127.0.0.1:3333') #This is the ip:port for Movid
 # '127.0.0.1:7500') # reactiVISION's deafault ip and port
-tu.start()
+#tu.start()
+'''
+class TrackingListener(TrackingServer):
+    def ReadPoints(self):
+    	if(self.ready):
+    		self.reading = True
+	    	for i in range(len(self.ids)):
+			print 'id: ', self.ids[i], ' > ', self.positions[i]
+			    
+			px = 50*(self.positions[i][0] - .5)
+			py = 50*(self.positions[i][1] - .5)
+			env.updatePlayerPositionByIndex(self.ids[i]%10, Vector2D(px, py))
+		self.reading = False
+
+
+Tracker = TrackingListener();
+Tracker.start()
+
 
 def readTrackPoints():
-    tu.update()
+   # tu.update()
+   Tracker.ReadPoints()
 
 LoopingCall(readTrackPoints).start(0.06)
 
