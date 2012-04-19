@@ -89,8 +89,8 @@ class PlayerController(object):
         if directionX != 0 or directionY != 0:
             self.position += (dt * self.speed) * direction.norm()
 
-        #self.perspective.callRemote('updatePosition', self.position)
-        #self.view.setCenter(self.position)
+        self.perspective.callRemote('updatePosition', self.position)
+        self.view.setCenter(self.position)
 
 
     def _startedAction(self, action):
@@ -125,14 +125,15 @@ class PlayerController(object):
             self.perspective.callRemote('finishBuilding')
         elif self._currentAction == SCAN:
             self.perspective.callRemote('finishScanning')
-        #elif self._currentAction == UPGRADE:
-        #    self.perspective.callRemote('finishUpgrading')
+        elif self._currentAction == UPGRADE:
+            self.perspective.callRemote('finishUpgrading')
         self._currentAction = None
 
         return
 
     def motionKeyPress(self, key):
         if key == MOVE_UP:
+	    
             self._movingUp = True
 
         if key == MOVE_DOWN:

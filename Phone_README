@@ -2,6 +2,8 @@ Phone notes:
 
 ------- To ssh onto the phone:
 
+* install openssh via application manager on phone
+
 * Open up terminal on the phones, input
 	sudo gainroot #password is 'danger' if it asks
 
@@ -10,11 +12,44 @@ Phone notes:
 
 * It will output a bunch of information, you need to find the ip under 'inet addr'
 
+* if ifconfig does not work, access the flatland router (192.168.1.1 admin/admin) and look up the dhcp client table and look for the IP address next to host names Nokia-N900
+
 * Now, open the command line on your computer, and do ssh root@<the ip from above>
 
-* Flatland lives in /home/user/flatland-arg , where you can run the client just as you would on a real computer
+* Flatland should live in /home/user/flatland-arg , where you can run the client just as you would on a real computer. If this is not the case, look at the setting up phone section below
+
+
+------- To setup libraries on the phone (do once):
+
+step 1. ssh into your phone
+step 2. add 
+deb http://repository.maemo.org/extras-testing/ fremantle free non-free
+to /etc/apt/sources.list
+i.e.
+echo "deb http://repository.maemo.org/extras-testing/ fremantle free non-free" >> /etc/apt/sources.list
+note, this repository is good as of 4/11/12
+step 3. run apt-get install python python-twisted-web python-pygame python-dbus (or something of this sort)
+
+------- To setup flatland on the phone (do once):
+
+step 1. 
+step 2/3. open a terminal and run
+chmod u+x copyGameToPhone (you may or mat not need to do this)
+./copyGameToPhone <ip address of phone> (this will prompt you twice for the password which should be danger, the second prompt happens after all of the contents have been copied over which takes a while. Note this copies all the unused stuff as well which is harmless but does take a while. See manual steps below for more info. 
+step 2 (manual). I'm not sure what files are necessary but I assumee it is just netowkr-client and game/ so copy those onto the phone. 
+step 3 (manual). copy flatland.desktop into /usr/share/applications/hildon on the phone. Note this assumes flatland is located at /home/user/flatland-arg (NOTE: as of 4/11/12, the desktop shortcut does NOT work for whatever reason, see manual launch)
+
+------- Launching flatland manually:
+
+step 1. cd /home/user/flatland-arg (on your phone or via ssh)
+step 2. ./network-client
 
 ------- Random notes:
+
+* to quit the game, hit the camera button to open up the camera app. Now you can get to the window screen and close flatland
+* for development, use copySourceToPhone to copy only python script files instead of everything. Alternatively, if doing from ssh, than ctrl-C in remote terminal should work too.
+
+* phones with white tape on the back should all have libraries setup already
 
 * Both the server computer, and the phone must be connected to the flatland-arg network (the one created by the purple router)
 

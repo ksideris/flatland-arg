@@ -1,0 +1,45 @@
+#pipeline create Camera v
+
+#pipeline create Image v
+#pipeline set v filename media/test_img.bmp
+
+pipeline create Video v
+pipeline set v filename /home/gameadmin/Desktop/videos-konstantinos/EDAtestVideos/withphone.avi
+
+pipeline create GrayScale g
+pipeline create ThresholdColored t
+pipeline set t threshold 50
+pipeline set t type tozero
+
+
+pipeline create FlatlandColorPairFinder f
+pipeline set f pair_distance 60
+pipeline set f use_histogram false
+pipeline set f num_players 4
+pipeline set f DilationRounds 7
+pipeline set f GaussianFilterSize 9
+pipeline set f PositionWeight 0
+pipeline set f EnableReset false
+pipeline set f ColorWeight 10
+pipeline set f color HSV
+
+pipeline create BlobFinder b
+pipeline set b min_size 50
+pipeline set b max_size 200
+
+pipeline create Tuio tu
+#pipeline set tu ip 127.0.0.1
+#192.168.1.100
+#pipeline set tu port 3333
+pipeline create ImageDisplay d1
+pipeline create ImageDisplay d2
+
+pipeline connect v 0 t 0
+pipeline connect t 0 f 0
+#pipeline connect g 0 b 0
+pipeline connect t 0 d1 0
+pipeline connect f 0 d2 0
+pipeline connect f 1 tu 0
+
+
+

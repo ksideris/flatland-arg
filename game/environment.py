@@ -170,6 +170,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         self.attackOk = True
 
     def startAttacking(self, player):
+        print str(player) + " is attacking"
 #        if player.action == None:
         player.setAction("Attacking", LoopingCall(self.attack, player))
         player.action.start(1.5, now=self.attackOk)
@@ -195,6 +196,9 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             hadNoBuilding = False
         else:
             action = "Building"
+            
+        print str(player) + " is " + action
+        
         player.setAction(action, LoopingCall(player.building.build, player))
         player.action.start(2, now=hadNoBuilding)
 
@@ -339,10 +343,10 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
         # ======================================================================
         # draw draw white square for photo sensor
+	# DEPRECATED, white square no longer needed for tracking.
 
         sqrSz = 75
-
-        if not self.team == None:
+        if False: #not self.team == None:
             sensRect = pygame.Rect(0, 0, sqrSz + 5, sqrSz + 10)
             sensRect.right = 800
             sensRect.centery = 240
