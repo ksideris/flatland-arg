@@ -1,19 +1,24 @@
 
-import cv , liblo, sys ,random,math
+import cv , liblo, sys ,random,math,time
 
 ESC_KEY = 27
 USE_CAM =False
-VIDEO_FILE = '/home/gameadmin/Desktop/videos-konstantinos/test_official_march2012.avi'#EDAtestVideos/withphone.avi'
+RECORDINGS_FOLDER = '/home/costas/EDAtestVideos/'
+VIDEO_FILE = RECORDINGS_FOLDER+'withphone.avi'
 THRESHOLD_VALUE = 30
-COLOR_THRESHOLD_VALUE = 80
+COLOR_THRESHOLD_VALUE = 60
 EROSION_ROUNDS = 1
 DILATION_ROUNDS = 1
 GAUSSIAN_SIZE =3
-PAIR_RANGE =20
+PAIR_RANGE =60
 MATCHING_THRESHOLD = 60
 HISTORY_FRAMES=3
 SMOOTHING_WEIGHT = 0.1 # between 0,1
+DEBUG = True
+RECORD = True
+RECORDING = RECORDINGS_FOLDER +'recording'+ str(int(time.time()))+'.avi'
 
+print RECORDING
 def LowPassFilter(signal):
 	
 	value=signal[0]
@@ -194,7 +199,7 @@ def GetContourDescriptor(contour,src):
 			cv.Set2D(src, i, j, (0,0,0) )
 			if(pixel_value[2]>COLOR_THRESHOLD_VALUE):
 				h += pixel_value[0]
-				s += pixel_value[1]
+				s += pixel_value[1]*2
 				v += pixel_value[2]
 				cv.Set2D(src, i, j, (pixel_value[0],pixel_value[1]*2 ,pixel_value[2],pixel_value[3])) 
 	
@@ -216,19 +221,27 @@ def main():
 	#end of network con
 	
 	if(USE_CAM):
-		capture =cv.CaptureFromCAM(0)
+		capture =cv.CaptureFromCAM(0)		
+		fps =  int (cv.GetCaptureProperty( capture, cv.CV_CAP_PROP_FPS ));
 	else:
 		capture = cv.CaptureFromFile(VIDEO_FILE)
+		fps =  30
 
 	frameCount = 0
-	key=0 
-	fps =  30#int (cv.GetCaptureProperty( capture, cv.CV_CAP_PROP_FPS ));   
+	key=0    
 	width,height = cv.GetSize(cv.QueryFrame( capture ) )
+	
+	if(RECORD):
+		
+		writer = cv.CreateVideoWriter(RECORDING,cv.CV_FOURCC('D', 'I', 'V', 'X'),fps,(width,height))
+	
 	Players = []
+	
 	while( key != ESC_KEY ) : 
 	  		 
 		frame = cv.QueryFrame( capture ) 
-		
+		if(RECORD):
+			cv.WriteFrame(writer, frame)
 		if frame == None:
 			print "END OF VIDEO"
 			cv.WaitKey()
@@ -258,9 +271,9 @@ def main():
    			c.x = rect[0] + rect[2] / 2-1
    			c.y = rect[1] + rect[3] / 2-1 
    			Blobs.append(c)
-   			
-   			#font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, .7, .7, 0, 1, 8) 
-			#cv.PutText(frame,'HSV: '+str(int(color[0]))+','+ str(int(color[1]))+','+ str(int(color[2])), (rect[0] + rect[2] / 2-1, rect[1] + rect[3] / 2-1),font, cv.ScalarAll(125)) 
+   			if(DEBUG):
+	   			font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, .7, .7, 0, 1, 8) 
+				cv.PutText(frame,'HSV: '+str(int(color[0]))+','+ str(int(color[1]))+','+ str(int(color[2])), (rect[0] + rect[2] / 2-1, rect[1] + rect[3] / 2-1),font, cv.ScalarAll(125)) 
 			
 			
 			_id+=1
