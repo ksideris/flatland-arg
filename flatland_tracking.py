@@ -2,14 +2,25 @@
 import cv , liblo, sys ,random,math
 
 ESC_KEY = 27
+USE_CAM =False
 VIDEO_FILE = '/home/costas/EDAtestVideos/withphone.avi'
-THRESHOLD_VALUE = 20
-EROSION_ROUNDS = 2
+THRESHOLD_VALUE = 30
+COLOR_THRESHOLD_VALUE = 60
+EROSION_ROUNDS = 1
 DILATION_ROUNDS = 1
 GAUSSIAN_SIZE =3
 PAIR_RANGE =60
-MATCHING_THRESHOLD = 1000
+MATCHING_THRESHOLD = 60
+HISTORY_FRAMES=10
+SMOOTHING_WEIGHT = 0.01 # between 0,1
 
+def LowPassFilter(signal):
+	
+	value=signal[0]
+	for i in range(1,len(signal)):
+		value = SMOOTHING_WEIGHT*signal[i]+(1.0-SMOOTHING_WEIGHT)*value;
+	return value
+	
 class ColorBlob:
 
 	x	=0
@@ -23,12 +34,27 @@ class ColorBlob:
 		
 class Player:
 
-      	signature = (0,0,0,0,0,0)
-	x	=0
-	y	=0
+	signature = (0,0,0,0,0,0)
+	xhist	= []
+	yhist	= []
 	_id	=0
 	updated= False
-	
+	def __init__(self):
+    		self.xhist = []
+    		self.yhist = []
+	def PushX(self,_x):
+		self.xhist.append(_x)
+		if(len(self.xhist) >HISTORY_FRAMES):
+			self.xhist.remove(self.xhist[0])
+		
+		self.x = LowPassFilter(self.xhist) 
+	def PushY(self,_y):
+		self.yhist.append(_y)
+		
+		if(len(self.yhist) >HISTORY_FRAMES):
+			self.yhist.remove(self.yhist[0])	
+		self.y = LowPassFilter(self.yhist) 
+
 
 
 def Preprocess(frame):
@@ -104,8 +130,8 @@ def InitializePlayers(Players,players,Blobs):
 	for player in players:
 		p = Player()
 		p.signature = Blobs[player[1][0]].color+Blobs[player[1][1][0]].color;
-		p.x = player[1][2][0]
-		p.y = player[1][2][1]
+		p.PushX( player[1][2][0] )
+		p.PushY( player[1][2][1] )
 		p._id = player[0]
 		Players.append(p)
 		
@@ -125,17 +151,18 @@ def ResolveClusters(Players,Blobs,Clusters):
 			minIdx=-1
 			minDist =100000
 			for idx,signature in enumerate(Signatures):
-				color_delta= WeightedVectorEucl(player.signature,signature[1],0.99) 
+				color_delta= WeightedVectorEucl(player.signature,signature[1],1) 
 				x = (Blobs[signature[0][0]].x + Blobs[signature[0][1]].x)/2.0
 				y = (Blobs[signature[0][0]].y + Blobs[signature[0][1]].y)/2.0
-				dist = color_delta # + math.sqrt(pow(player.x-x,2.0)+pow(player.y-y,2.0))
-				if( dist< MATCHING_THRESHOLD and dist < minDist ):
+				pos_dist = math.sqrt(pow(player.x-x,2.0)+pow(player.y-y,2.0))
+				dist = color_delta  + 0.1*pos_dist 
+				if( pos_dist< MATCHING_THRESHOLD and dist < minDist ):
 					minDist = dist
 					minIdx = idx
 			if(minIdx>-1):
 				player.updated=True
-				player.x = (Blobs[Signatures[minIdx][0][0]].x + Blobs[Signatures[minIdx][0][1]].x)/2.0
-				player.y = (Blobs[Signatures[minIdx][0][0]].y + Blobs[Signatures[minIdx][0][1]].y)/2.0
+				player.PushX( (Blobs[Signatures[minIdx][0][0]].x + Blobs[Signatures[minIdx][0][1]].x)/2.0 )
+				player.PushY( (Blobs[Signatures[minIdx][0][0]].y + Blobs[Signatures[minIdx][0][1]].y)/2.0 )
 	
 	return Players
 	
@@ -150,7 +177,8 @@ def FindClusters(Blobs,Range):
 				dist = math.sqrt( pow(candidate.x-blob.x,2)+pow(candidate.y-blob.y,2))
 				if(dist < Range ):
 					Neighbors.append( cand_idx )
-		Clusters.append( (idx,Neighbors, (blob.x,blob.y) ) )
+		if(len(Neighbors)>0):
+			Clusters.append( (idx,Neighbors, (blob.x,blob.y) ) )
 						
 	return Clusters				
 	
@@ -163,17 +191,19 @@ def GetContourDescriptor(contour,src):
     		for j in range(rect[0],rect[0]+ rect[2]-1): 
 		    	pixel_value = cv.Get2D(src, i, j) 
 				# Since OpenCV loads color images in BGR, not RGB 
-			h += pixel_value[0] 
-			s += pixel_value[1]*2 
-			v += pixel_value[2]
-			cv.Set2D(src, i, j, (pixel_value[0],pixel_value[1]*2 ,pixel_value[2],pixel_value[3])) 
+			cv.Set2D(src, i, j, (0,0,0) )
+			if(pixel_value[2]>COLOR_THRESHOLD_VALUE):
+				h += pixel_value[0]
+				s += pixel_value[1]
+				v += pixel_value[2]
+				cv.Set2D(src, i, j, (pixel_value[0],pixel_value[1]*2 ,pixel_value[2],pixel_value[3])) 
 	
 	h /= rect[2]*rect[3]
 	s /= rect[2]*rect[3]
 	v /= rect[2]*rect[3]
 	
 	
-	return (h,s) 
+	return (h,s,v) 
 		
 def main():
 
@@ -184,11 +214,15 @@ def main():
     		print str(err)
     		sys.exit()
 	#end of network con
-	capture = cv.CaptureFromFile(VIDEO_FILE)
+	
+	if(USE_CAM):
+		capture =cv.CaptureFromCAM(0)
+	else:
+		capture = cv.CaptureFromFile(VIDEO_FILE)
 
 	frameCount = 0
 	key=0 
-	fps =  int (cv.GetCaptureProperty( capture, cv.CV_CAP_PROP_FPS ));   
+	fps =  30#int (cv.GetCaptureProperty( capture, cv.CV_CAP_PROP_FPS ));   
 	width,height = cv.GetSize(cv.QueryFrame( capture ) )
 	Players = []
 	while( key != ESC_KEY ) : 
@@ -219,13 +253,14 @@ def main():
 			
    			c = ColorBlob()
    			
-   			c.color = GetContourDescriptor(contour,frame)
+   			color = GetContourDescriptor(contour,frame)
+   			c.color = (color[0],color[1])
    			c.x = rect[0] + rect[2] / 2-1
    			c.y = rect[1] + rect[3] / 2-1 
    			Blobs.append(c)
    			
    			#font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, .7, .7, 0, 1, 8) 
-			#cv.PutText(output,'HSV: '+str(int(c.color[0]))+','+ str(int(c.color[1]))+','+ str(int(c.color[2])), (rect[0] + rect[2] / 2-1, rect[1] + rect[3] / 2-1),font, 255) 
+			#cv.PutText(frame,'HSV: '+str(int(color[0]))+','+ str(int(color[1]))+','+ str(int(color[2])), (rect[0] + rect[2] / 2-1, rect[1] + rect[3] / 2-1),font, cv.ScalarAll(125)) 
 			
 			
 			_id+=1
@@ -233,8 +268,9 @@ def main():
 			
 			
 		Clusters = FindClusters(Blobs,PAIR_RANGE)
-		Players  = ResolveClusters(Players,Blobs,  Clusters)
 		Players = ResetPlayers(Players)
+		Players  = ResolveClusters(Players,Blobs,  Clusters)
+		
 		
 		
 		for idx,player in enumerate(Players):
@@ -253,10 +289,12 @@ def main():
 			playerids = []
 			ReducedClusters = InitializeClusters(Clusters)
 			print ReducedClusters
+			
 			for idx,cluster in enumerate(ReducedClusters):
 				copy =cv.CreateImage(cv.GetSize(frame),frame.depth, frame.channels)
 				cv.Copy(frame,copy)
 				cv.Circle(copy,(int(cluster[2][0]),int(cluster[2][1])),PAIR_RANGE,(255,0,0),10)
+				
 				cv.ShowImage("Initialization Screen", copy)
 				key=-1
 				while(key < 48 or key > 57):
@@ -267,15 +305,13 @@ def main():
 				
 			print playerids
 			key = cv.WaitKey()
+			cv.DestroyWindow("Initialization Screen")
 			Players=InitializePlayers(Players,playerids,Blobs)
 			print Players
 			
 		else:
 			cv.ShowImage( "video", frame );  
-			 
-	  	
-	  	
-		
+			 		
 		
 		bundle.add(liblo.Message("/End"))
 		liblo.send(target, bundle)
