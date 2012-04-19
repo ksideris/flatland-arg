@@ -14,8 +14,8 @@ PAIR_RANGE =60
 MATCHING_THRESHOLD = 60
 HISTORY_FRAMES=3
 SMOOTHING_WEIGHT = 0.1 # between 0,1
-DEBUG = True
-RECORD = True
+DEBUG = False
+RECORD = False
 RECORDING = RECORDINGS_FOLDER +'recording'+ str(int(time.time()))+'.avi'
 
 print RECORDING
