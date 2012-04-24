@@ -181,9 +181,11 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
     def startBuilding(self, player):
         hadNoBuilding = not player.building
+       
         if hadNoBuilding:
+            print 'asdsd'
             newBuildingPosition = player.position
-
+	    
             newBuildingPosition.x = newBuildingPosition.x - 2 #TODO this will likely have to change to x for the phone
 
             building = self.createBuilding(player.team, newBuildingPosition)
@@ -193,6 +195,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                 return
         if player.building == self.rp:
             action = "Mining"
+            
             hadNoBuilding = False
         else:
             action = "Building"
@@ -265,7 +268,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         for b in self.buildings.itervalues():
             # TODO save the view to get images
             b.images = view.images.images
-            if self.isVisible(b) or b.explosion:
+            if True:#self.isVisible(b) or b.explosion:
                 b.paint(view, view.screenCoord(b.position), b.team == self.team)
         self.rp.paint(view, view.screenCoord(self.rp.position))
         for p in self.players.itervalues():

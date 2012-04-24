@@ -3,8 +3,8 @@ import cv , liblo, sys ,random,math,time
 
 ESC_KEY = 27
 USE_CAM =False
-RECORDINGS_FOLDER = '/home/costas/EDAtestVideos/'
-VIDEO_FILE = RECORDINGS_FOLDER+'withphone.avi'
+RECORDINGS_FOLDER = '/trackingTest/'
+VIDEO_FILE = RECORDINGS_FOLDER+'edaTest.avi'
 THRESHOLD_VALUE = 30
 COLOR_THRESHOLD_VALUE = 60
 EROSION_ROUNDS = 1
@@ -13,7 +13,7 @@ GAUSSIAN_SIZE =3
 PAIR_RANGE =60
 MATCHING_THRESHOLD = 60
 HISTORY_FRAMES=3
-SMOOTHING_WEIGHT = 0.1 # between 0,1
+SMOOTHING_WEIGHT = 0.1 # between 0 and 1
 DEBUG = False
 RECORD = False
 RECORDING = RECORDINGS_FOLDER +'recording'+ str(int(time.time()))+'.avi'

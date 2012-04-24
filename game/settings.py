@@ -23,7 +23,7 @@ class Images:
         #self.images["Generic_2"] = Animation(dir.child("effects").child("multi_use_action2").child("multi_use_action2_%04d.png"))
         self.images["player upgraded"] = Animation(dir.child("effects").child("player_lvlup").child("player_lvlup%04d.png"))
         
-        #self.images["mining"] = LoopingAnimation(dir.child("effects").child("resource_gather").child("resource_gather%04d.png"))
+        self.images["mining"] =Animation(dir.child("effects").child("resource_gather").child("resource_gather%04d.png"))
 
         self._initPlayerImages(dir)
         self._initBuildingImages(dir)

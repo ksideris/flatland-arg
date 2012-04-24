@@ -398,6 +398,10 @@ class Player(pb.Cacheable, pb.RemoteCache):
 
                 elif self.actionName == 'Mining':
                     if self.resources < self.sides or self.sides == 0:
+                    	animation = self.images["mining"].copy()
+                    	
+            		animation.start(6).addCallback(lambda ign: self.events.remove(animation))
+	    		self.events.add(animation)
                         if not pygame.mixer.Channel(7).get_busy():
                             pygame.mixer.Channel(7).play(getSound("mining"))
                         else:
@@ -459,7 +463,9 @@ class Player(pb.Cacheable, pb.RemoteCache):
 #                self.miningAnimation = self.images["mining"].copy()
 #                self.miningAnimation.start(12)
 #            self.miningAnimation.draw(view.screen, position)
-
+	    
+	    
+	    
             image = view.images.images["Player", self.team, self.sides]
             image.draw(view.screen, position)
             for image in self.topEvents:
