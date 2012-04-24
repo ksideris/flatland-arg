@@ -274,6 +274,12 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         for p in self.players.itervalues():
             if p.self:
                 view.setCenter(p.position)
+                # Draw player id
+		font = pygame.font.Font("data/Deutsch.ttf", 20)
+		text = font.render("Player:" + str(p.player_id), True, (180, 180, 125))
+		
+		textrect = text.get_rect(left = 700, top = 20)
+		view.screen.blit(text,textrect)
             if p.self and p.building:
                 p.building.drawToolTip(view, "Build", p.team)
             p.paint(view, view.screenCoord(p.position), self.team == p.team, self.isVisible(p))
@@ -291,8 +297,9 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         text = pygame.transform.rotate(text, 270)
         textrect = text.get_rect(right = 775, bottom = 410)
         view.screen.blit(text,textrect)
-
-
+	
+	
+	
         # ======================================================================
         #Draw the time remaining
         minRemaining = 15
