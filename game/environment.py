@@ -268,7 +268,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         for b in self.buildings.itervalues():
             # TODO save the view to get images
             b.images = view.images.images
-            if True:#self.isVisible(b) or b.explosion:
+            if self.isVisible(b) or b.explosion:
                 b.paint(view, view.screenCoord(b.position), b.team == self.team)
         self.rp.paint(view, view.screenCoord(self.rp.position))
         for p in self.players.itervalues():
@@ -288,12 +288,20 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         #TODO color appropriately
         font = pygame.font.Font("data/Deutsch.ttf", 35)
         #font = pygame.font.Font(None, 45)
-        text = font.render(str(self.calculateScore(self.team)), True, (0,255,255))
+        fontColors = [(255, 0, 0), (0,255,255)]
+        if self.team is None:
+            thisTeam = 1
+            otherTeam = 2
+        else:
+            thisTeam = self.team
+            otherTeam = self.getOpponentTeam()
+            
+        text = font.render(str(self.calculateScore(thisTeam)), True, fontColors[thisTeam-1])
         text = pygame.transform.rotate(text, 270)
         textrect = text.get_rect(right =735, bottom = 410)
         view.screen.blit(text,textrect)
 
-        text = font.render(str(self.calculateScore(self.getOpponentTeam())), True, (255, 0, 255))
+        text = font.render(str(self.calculateScore(otherTeam)), True, fontColors[otherTeam-1])
         text = pygame.transform.rotate(text, 270)
         textrect = text.get_rect(right = 775, bottom = 410)
         view.screen.blit(text,textrect)
