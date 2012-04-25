@@ -155,27 +155,29 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
     def attack(self, player):
         #if self.attackOk:
-        if player.sides >= 3:
-            self.attackOk = False
-            reactor.callLater(1.5, self.makeAttackOk)
-            distance = 3
-            player.attack()
-            for p in self.players.itervalues():
-                if (p.team != player.team) and (p.position - player.position) < distance:
-                    p.hit()
-            for b in self.buildings.values():
-                if b.team != player.team and (b.position - player.position) < distance:
-                    b.hit()
+        self.attackOk = False
+        reactor.callLater(1.5, self.makeAttackOk)
+        distance = 3
+        player.attack()
+        for p in self.players.itervalues():
+            if (p.team != player.team) and (p.position - player.position) < distance:
+                p.hit()
+        for b in self.buildings.values():
+            if b.team != player.team and (b.position - player.position) < distance:
+                b.hit()
 
     def makeAttackOk(self):
         self.attackOk = True
 
     def startAttacking(self, player):
-        print str(player) + " is attacking"
-#        if player.action == None:
-        player.setAction("Attacking", LoopingCall(self.attack, player))
-        player.action.start(1.5, now=self.attackOk)
-        self.attackOk = False
+        if player.sides >= 3:
+            print str(player) + " is attacking"
+    #        if player.action == None:
+            player.setAction("Attacking", LoopingCall(self.attack, player))
+            player.action.start(1.5, now=self.attackOk)
+            self.attackOk = False
+        else:
+            print str(player) + " is not allowed to attack"
 
         #self.attack(player)
 
@@ -261,7 +263,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         # object in range of a scanning player
         for p in self.players.itervalues():
             if (self.team == p.team):
-                if (entity.position - p.position) < p.getScanRadius() * 12.35:
+                if (entity.position - p.position) < p.getScanRadius() * 5:
                     return True
         return False
 
