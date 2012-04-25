@@ -155,16 +155,17 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
     def attack(self, player):
         #if self.attackOk:
-        self.attackOk = False
-        reactor.callLater(1.5, self.makeAttackOk)
-        distance = 3
-        player.attack()
-        for p in self.players.itervalues():
-            if (p.team != player.team) and (p.position - player.position) < distance:
-                p.hit()
-        for b in self.buildings.values():
-            if (b.position - player.position) < distance:
-                b.hit()
+        if player.sides >= 3:
+            self.attackOk = False
+            reactor.callLater(1.5, self.makeAttackOk)
+            distance = 3
+            player.attack()
+            for p in self.players.itervalues():
+                if (p.team != player.team) and (p.position - player.position) < distance:
+                    p.hit()
+            for b in self.buildings.values():
+                if b.team != player.team and (b.position - player.position) < distance:
+                    b.hit()
 
     def makeAttackOk(self):
         self.attackOk = True
