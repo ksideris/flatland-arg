@@ -422,7 +422,9 @@ class Player(pb.Cacheable, pb.RemoteCache):
             animation = self.images["LevelUp"].copy()
             animation.startReversed(72).addCallback(lambda ign: self.topEvents.remove(animation))
             self.topEvents.add(animation)
-            self.sides -= 1
+            # TODO: This is a hack to prevent from dying, until further improvements in game logic
+            if self.sides>0:
+                self.sides -= 1
 
     def hit(self):
         self._hit()
