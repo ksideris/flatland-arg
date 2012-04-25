@@ -30,8 +30,12 @@ from game.ServerKeyboardController import ServerController
 
 from vector import Vector2D
 #costas
-from TrackingServer import *
-
+hasTrackingServer = True
+try:
+    from TrackingServer import *
+except ImportError:
+    hasTrackingServer = False
+    print "WARNING! TrackingServer module not found. Obviously, tracking won't work"
 
 
 MAX_DISTANCE2 = 5
@@ -122,28 +126,29 @@ tu = MovidTuioListener(None, # listen at IP:port
 # '127.0.0.1:7500') # reactiVISION's deafault ip and port
 #tu.start()
 '''
-class TrackingListener(TrackingServer):
-    def ReadPoints(self):
-    	if(self.ready):
-    		self.reading = True
-	    	for i in range(len(self.ids)):
-			print 'id: ', self.ids[i], ' > ', self.positions[i]
-			    
-			px = 50*(self.positions[i][0] - .5)
-			py = 50*(self.positions[i][1] - .5)
-			env.updatePlayerPositionByIndex(self.ids[i]%10, Vector2D(px, py))
-		self.reading = False
-
-
-Tracker = TrackingListener();
-Tracker.start()
-
-
-def readTrackPoints():
-   # tu.update()
-   Tracker.ReadPoints()
-
-LoopingCall(readTrackPoints).start(0.06)
+if hasTrackingServer:
+    class TrackingListener(TrackingServer):
+        def ReadPoints(self):
+        	if(self.ready):
+        		self.reading = True
+    	    	for i in range(len(self.ids)):
+    			print 'id: ', self.ids[i], ' > ', self.positions[i]
+    			    
+    			px = 50*(self.positions[i][0] - .5)
+    			py = 50*(self.positions[i][1] - .5)
+    			env.updatePlayerPositionByIndex(self.ids[i]%10, Vector2D(px, py))
+    		self.reading = False
+    
+    
+    Tracker = TrackingListener();
+    Tracker.start()
+    
+    
+    def readTrackPoints():
+       # tu.update()
+       Tracker.ReadPoints()
+    
+    LoopingCall(readTrackPoints).start(0.06)
 
 realm.environment = env
 view.start('Server')
@@ -162,5 +167,5 @@ from twisted.internet import protocol
 import cPickle
 
 p = reactor.listenUDP(0, DatagramProtocol())
-LoopingCall(lambda: p.write("FlatlandARG!!!", ("224.0.0.1", 8000))).start(1)
+LoopingCall(lambda: p.write("FlatlandARG!!!", ("127.0.0.1", 8000))).start(1)
 reactor.run()
