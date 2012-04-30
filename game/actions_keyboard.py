@@ -116,7 +116,7 @@ class PlayerController(object):
             self.perspective.callRemote('startBuilding')
         elif self._currentAction == SCAN:
             self.perspective.callRemote('startScanning')
-            self.view.addAction("sweep")
+            #self.view.addAction("sweep")
         elif self._currentAction == UPGRADE:
             #make upgrade key toggle the upgrade action
             if lastAction != UPGRADE:

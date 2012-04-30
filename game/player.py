@@ -172,19 +172,24 @@ class Player(pb.Cacheable, pb.RemoteCache):
 #        self.miningAnimation = None
 
     def _startScanning(self):
-        self.scanning.start()
+	if(self.sides>=3):
+		
+        	self.scanning.start()
 
     def startScanning(self):
-        self._startScanning()
-        for o in self.observers: o.callRemote('startScanning')
-
+        if(self.sides>=3):
+		self._startScanning()
+		for o in self.observers: o.callRemote('startScanning')
+    print "asd"
     observe_startScanning = _startScanning
 
     def _finishScanning(self):
-        self.scanning.stop()
+	if(self.sides>=3):
+        	self.scanning.stop()
     def finishScanning(self):
-        self._finishScanning()
-        for o in self.observers: o.callRemote('finishScanning')
+        if(self.sides>=3):
+		self._finishScanning()
+		for o in self.observers: o.callRemote('finishScanning')
     observe_finishScanning = _finishScanning
 
     def getScanRadius(self):
@@ -201,6 +206,7 @@ class Player(pb.Cacheable, pb.RemoteCache):
             pygame.mixer.Channel(7).play(getSound("explosion"))
 
     def trapped(self):
+	
         self.observe_trapped(playSound = False)
         for o in self.observers: o.callRemote('trapped')
 

@@ -3,7 +3,7 @@ import cv , liblo, sys ,random,math,time
 
 ESC_KEY = 27
 USE_CAM =False
-RECORDINGS_FOLDER = '/trackingTest/'
+RECORDINGS_FOLDER = '/home/costas/flatland-arg/trackingTest/'
 VIDEO_FILE = RECORDINGS_FOLDER+'edaTest.avi'
 THRESHOLD_VALUE = 30
 COLOR_THRESHOLD_VALUE = 60

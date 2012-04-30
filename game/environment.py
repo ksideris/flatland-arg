@@ -245,7 +245,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         player.updatePosition(position, building)
 
         for b in self.buildings.itervalues():
-            if b.isTrap() and (b.team != player.team) and ((b.position - player.position) < 1):
+            if b.isTrap() and (b.team != player.team) and ((b.position - player.position) < 1 and player.sides>=3):
                 player.trapped()
                 b.explode()
                 break
