@@ -186,7 +186,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         hadNoBuilding = not player.building
        
         if hadNoBuilding:
-            print 'asdsd'
+            
             newBuildingPosition = player.position
 	    
             newBuildingPosition.x = newBuildingPosition.x - 2 #TODO this will likely have to change to x for the phone
@@ -200,13 +200,21 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             action = "Mining"
             
             hadNoBuilding = False
+	    player.setAction(action, LoopingCall(player.building.build, player))
+            player.action.start(2, now=hadNoBuilding)
+	elif player.building.isPolyFactory() and player.building.sides == 5 and player.building.resources == 5:
+	    action = "Mining"
+            
+            hadNoBuilding = False
+	    player.setAction(action, LoopingCall(self.rp.build, player))
+            player.action.start(2, now=hadNoBuilding)
         else:
             action = "Building"
-            
+            player.setAction(action, LoopingCall(player.building.build, player))
+            player.action.start(2, now=hadNoBuilding)
         print str(player) + " is " + action
         
-        player.setAction(action, LoopingCall(player.building.build, player))
-        player.action.start(2, now=hadNoBuilding)
+
 
     def finishAction(self, player):
         if player.action:
