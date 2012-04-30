@@ -354,7 +354,7 @@ class PlayerController(object):
         """
         Handle currently available pygame input events.
         """
-	print 'updatePosition'
+	
         time = pygame.time.get_ticks()
         self._updatePosition((time - self.previousTime) / 1000.0)
         self.previousTime = time

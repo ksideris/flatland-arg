@@ -322,12 +322,17 @@ class Player(pb.Cacheable, pb.RemoteCache):
 
 
     def startAcceptUpgrade(self):
-        self.observe_startAcceptUpgrade(playSound = False)
-        for o in self.observers: o.callRemote('startAcceptUpgrade')
+	if(self.sides<>6):
+		self.observe_startAcceptUpgrade(playSound = False)
+		for o in self.observers: o.callRemote('startAcceptUpgrade')
 
     def observe_startAcceptUpgrade(self, playSound = True):
         if playSound:
-            pygame.mixer.Channel(5).play(getSound("accept upgrade"))
+            	pygame.mixer.Channel(5).play(getSound("accept upgrade"))	
+	if (self.sides == self.resources) and self.sides<>6:
+		
+		self.levelUp()
+	
 
     def loseResource(self):
         self._loseResource(playSound = False)
@@ -438,16 +443,18 @@ class Player(pb.Cacheable, pb.RemoteCache):
     observe_hit = _hit
 
     def _levelUp(self):
+        
         self.armor.clear()
         self.setResources(0)
         self.sides += 1
 
-        #animation = self.images["building upgraded"].copy()
-        #animation.start(12).addCallback(lambda ign: self.topEvents.remove(animation))
-        #self.topEvents.add(animation)
+        animation = self.images["building upgraded"].copy()
+        animation.start(12).addCallback(lambda ign: self.topEvents.remove(animation))
+        self.topEvents.add(animation)
     def levelUp(self):
-        self._levelUp()
-        for o in self.observers: o.callRemote('levelUp')
+	
+	self._levelUp()
+	for o in self.observers: o.callRemote('levelUp')
     observe_levelUp = _levelUp
 
     def paint(self, view, position, isTeammate, isVisible):
@@ -521,7 +528,7 @@ class Building(pb.Cacheable, pb.RemoteCache):
     def build(self, player):
         if not player.resources:
             return
-        if self.sides == 5 and self.resources == 5:
+        if self.sides == 5 and self.resources == 5: #code for player upgrade
             if self.upgrading and self.upgrading.sides > 2:
                 player.loseResource()
                 if self.upgrading.sides == self.upgrading.resources:

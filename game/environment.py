@@ -222,11 +222,15 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             player.setAction(None, None)
 
     def startUpgrading(self, player):
-        player.startAcceptUpgrade()
-        for b in self.buildings.itervalues():
-            if b.isPolyFactory() and (b.team == player.team) and (b.position - player.position) < 3 and not b.upgrading:
-                b.upgrading = player
-                player.upgradingAt = b
+        if (player.sides == player.resources) and (player.sides<7) and (player.building == self.rp or player.building.isPolyFactory() ):
+		player.startAcceptUpgrade()
+        '''for b in self.buildings.itervalues():
+            if b.isPolyFactory() and (b.team == player.team) and (b.position - player.position) < 3 :
+                #b.upgrading = player
+                #player.upgradingAt = b
+		player.startAcceptUpgrade()
+
+	'''
 
     def finishUpgrading(self, player):
         if player.upgradingAt:
