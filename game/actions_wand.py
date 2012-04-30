@@ -18,22 +18,21 @@ import accelreader
 import pickle
 from copy import deepcopy
 
+ACCEL_READ_WINDOW_LENGTH = 30
+
 # TODO: Can we have a keymap file?
 from pygame import (K_a as ATTACK,
                     K_s as SCAN,
                     K_d as BUILD,
                     K_w as UPGRADE,
-
+                    K_ESCAPE as QUIT,
                     K_DOWN as MOVE_DOWN,
                     K_UP as MOVE_UP,
                     K_LEFT as MOVE_LEFT,
                     K_RIGHT as MOVE_RIGHT,
-
-                    K_ESCAPE as QUIT)
+                    K_z as SWITCH_TEAMS)
 
 from game.vector import Vector2D
-
-ACCEL_READ_WINDOW_LENGTH = 30
 
 class PlayerController(object):
     """
@@ -133,8 +132,8 @@ class PlayerController(object):
         #if directionX != 0 or directionY != 0:
         #    self.position += (dt * self.speed) * direction.norm()
         #=======================================================================
-
-        #self.perspective.callRemote('updatePosition', self.position)
+	#This fixed mining. But why was it disabled? What else is commented out?
+        self.perspective.callRemote('updatePosition', self.position)
         #self.view.setCenter(self.position)
 
 
@@ -355,6 +354,7 @@ class PlayerController(object):
         """
         Handle currently available pygame input events.
         """
+	print 'updatePosition'
         time = pygame.time.get_ticks()
         self._updatePosition((time - self.previousTime) / 1000.0)
         self.previousTime = time

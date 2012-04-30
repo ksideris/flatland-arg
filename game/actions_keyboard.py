@@ -13,6 +13,13 @@ import pygame.mouse
 import pygame.time
 import sys
 
+
+
+
+
+
+
+
 # TODO: Can we have a keymap file?
 from pygame import (K_a as ATTACK,
                     K_s as SCAN,
@@ -34,6 +41,8 @@ class PlayerController(object):
     @ivar player: The player being controlled.
     @ivar downDirections: List of currently held arrow keys.
     """
+
+
     _actions = set([ATTACK, SCAN, BUILD, UPGRADE, SWITCH_TEAMS])
 
     def __init__(self, perspective, view):

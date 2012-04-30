@@ -167,5 +167,5 @@ from twisted.internet import protocol
 import cPickle
 
 p = reactor.listenUDP(0, DatagramProtocol())
-LoopingCall(lambda: p.write("FlatlandARG!!!", ("127.0.0.1", 8000))).start(1)
+LoopingCall(lambda: p.write("FlatlandARG!!!", ("224.0.0.1", 8000))).start(1)
 reactor.run()

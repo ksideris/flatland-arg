@@ -234,6 +234,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         
     def updatePlayerPosition(self, player, position):
         building = None
+	#print self.rp.position ,position
         for b in self.buildings.itervalues():
             if (player.team == b.team) and (b.position - position) < 3:
                 building = b
