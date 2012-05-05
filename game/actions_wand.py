@@ -133,7 +133,7 @@ class PlayerController(object):
         #    self.position += (dt * self.speed) * direction.norm()
         #=======================================================================
 	#This fixed mining. But why was it disabled? What else is commented out?
-        self.perspective.callRemote('updatePosition', self.position)
+        self.perspective.callRemote('updatePosition',Vector2D(-1000, -1000))
         #self.view.setCenter(self.position)
 
 
@@ -356,12 +356,12 @@ class PlayerController(object):
         """
 	
         time = pygame.time.get_ticks()
-        self._updatePosition((time - self.previousTime) / 1000.0)
+        self._updatePosition((time - self.previousTime)  /1000.0)
         self.previousTime = time
 
         #If player is pressing red self.BUTTON on scepter take two samples, add them to the average, match to predefined patterns
         #updated for lack of scepter button, replacement will be if player is pressing screen
-        #don't know if this is the right way to get mouse buttons from event queue
+        #don't know if this is the right way to get mouse buttokns from event queue
 
         for event in pygame.event.get():
             onDown = self._serialData[self.BUTTON] == 0

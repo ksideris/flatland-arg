@@ -354,7 +354,8 @@ class Player(pb.Cacheable, pb.RemoteCache):
     observe_attack = _attack
 
     def _updatePosition(self, position, building, playSound=True):
-        self.position = position
+	if(position[0]>-1000):
+        	self.position = position
         # TODO only need this for self.self
         def buildingReset():
             self.building = None

@@ -102,7 +102,7 @@ class GameAvatar(pb.Avatar):
 
 
 pygame.init()
-pygame.display.set_mode((800, 480), pygame.DOUBLEBUF)
+pygame.display.set_mode((1600, 960), pygame.DOUBLEBUF)#| pygame.FULLSCREEN)
 realm = GameRealm()
 env = Environment()
 view = Window(env)

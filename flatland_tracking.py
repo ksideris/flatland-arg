@@ -1,8 +1,7 @@
-
 import cv , liblo, sys ,random,math,time
 
 ESC_KEY = 27
-USE_CAM =False
+USE_CAM =True
 RECORDINGS_FOLDER = '/home/costas/flatland-arg/trackingTest/'
 VIDEO_FILE = RECORDINGS_FOLDER+'edaTest.avi'
 THRESHOLD_VALUE = 30
@@ -11,7 +10,7 @@ EROSION_ROUNDS = 1
 DILATION_ROUNDS = 1
 GAUSSIAN_SIZE =3
 PAIR_RANGE =60
-MATCHING_THRESHOLD = 60
+MATCHING_THRESHOLD = 120
 HISTORY_FRAMES=3
 SMOOTHING_WEIGHT = 0.1 # between 0 and 1
 DEBUG = False
@@ -222,7 +221,7 @@ def main():
 	
 	if(USE_CAM):
 		capture =cv.CaptureFromCAM(0)		
-		fps =  int (cv.GetCaptureProperty( capture, cv.CV_CAP_PROP_FPS ));
+		fps =  30#int (cv.GetCaptureProperty( capture, cv.CV_CAP_PROP_FPS ));
 	else:
 		capture = cv.CaptureFromFile(VIDEO_FILE)
 		fps =  30
@@ -260,7 +259,12 @@ def main():
 				
 		cv.CvtColor(frame,frame,cv.CV_BGR2HSV);
 		
-		while contour is not None:
+		try :
+			contour[0]
+			empty=False
+		except :
+			empty=True
+		while (contour is not None) and (not empty):
    			
    			rect = cv.BoundingRect(contour)
 			
@@ -333,4 +337,5 @@ def main():
  		
 if __name__ == '__main__':
  	main()
+
 

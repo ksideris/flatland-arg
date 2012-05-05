@@ -18,7 +18,7 @@ from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 import time
 
-GAME_DURATION = 15#15 seconds #15 * 60 # 15 minutes
+GAME_DURATION = 15*60#15 seconds #15 * 60 # 15 minutes
 PRESUMED_LATENCY = 1
 
 class Environment(pb.Cacheable, pb.RemoteCache):
@@ -302,26 +302,40 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 
         # Draw the score:
         #TODO color appropriately
-        font = pygame.font.Font("data/Deutsch.ttf", 35)
-        #font = pygame.font.Font(None, 45)
-        fontColors = [(255, 0, 0), (0,255,255)]
+        
         if self.team is None:
             thisTeam = 1
             otherTeam = 2
         else:
             thisTeam = self.team
             otherTeam = self.getOpponentTeam()
-            
-        text = font.render(str(self.calculateScore(thisTeam)), True, fontColors[thisTeam-1])
-        text = pygame.transform.rotate(text, 270)
-        textrect = text.get_rect(right =735, bottom = 410)
-        view.screen.blit(text,textrect)
+        if not self.team:
+		font = pygame.font.Font("data/Deutsch.ttf", 70)
+		#font = pygame.font.Font(None, 45)
+		fontColors = [(255, 0, 0), (0,255,255)]
+		text = font.render(str(self.calculateScore(thisTeam)), True, fontColors[thisTeam-1])
+		#text = pygame.transform.rotate(text, 270)
+		textrect = text.get_rect(right =1400, top = 40)
+		view.screen.blit(text,textrect)
 
-        text = font.render(str(self.calculateScore(otherTeam)), True, fontColors[otherTeam-1])
-        text = pygame.transform.rotate(text, 270)
-        textrect = text.get_rect(right = 775, bottom = 410)
-        view.screen.blit(text,textrect)
+		text = font.render(str(self.calculateScore(otherTeam)), True, fontColors[otherTeam-1])
+		#text = pygame.transform.rotate(text, 270)
+		textrect = text.get_rect(right =1400, top = 160)
+	else:
+		font = pygame.font.Font("data/Deutsch.ttf", 35)
+		#font = pygame.font.Font(None, 45)
+		fontColors = [(255, 0, 0), (0,255,255)]
+		text = font.render(str(self.calculateScore(thisTeam)), True, fontColors[thisTeam-1])
+		text = pygame.transform.rotate(text, 270)
+		textrect = text.get_rect(right =735, bottom = 410)
+		view.screen.blit(text,textrect)
+
+		text = font.render(str(self.calculateScore(otherTeam)), True, fontColors[otherTeam-1])
+		text = pygame.transform.rotate(text, 270)
+		textrect = text.get_rect(right = 775, bottom = 410)
+	view.screen.blit(text,textrect)
 	
+
 	
 	
         # ======================================================================
@@ -339,10 +353,20 @@ class Environment(pb.Cacheable, pb.RemoteCache):
         minStr = str(minRemaining)
         if minRemaining <= 9: minStr = "0" + minStr
 
-        font = pygame.font.Font("data/Deutsch.ttf", 35)
-        text = font.render(minStr + ":" + secStr, True, (255, 255, 255))
-        text = pygame.transform.rotate(text, 270)
-        textrect = text.get_rect(left = 15, bottom = 410)
+        
+        
+	if not self.team:
+	    font = pygame.font.Font("data/Deutsch.ttf", 70)
+            text = font.render(minStr + ":" + secStr, True, (255, 255, 255))
+	    text = pygame.transform.rotate(text, 0)
+            textrect = text.get_rect(left = 15, top = 40)
+	else:
+            font = pygame.font.Font("data/Deutsch.ttf", 35)
+            text = font.render(minStr + ":" + secStr, True, (255, 255, 255))
+	    text = pygame.transform.rotate(text, 270)
+  
+	    textrect = text.get_rect(left = 15, bottom = 410)
+
         view.screen.blit(text,textrect)
 
         # ======================================================================
@@ -368,11 +392,20 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                     endGameMessage = "DRAW!"
 
 
-            font = pygame.font.Font("data/Deutsch.ttf", 70)
-            #font = pygame.font.Font(None, 45)
-            text = font.render(endGameMessage, True, (255,255,255))
-            text = pygame.transform.rotate(text, 270)
-            textrect = text.get_rect(centery =240, centerx = 350)
+
+            
+	    if not self.team:
+		    font = pygame.font.Font("data/Deutsch.ttf", 140)
+		    #font = pygame.font.Font(None, 45)
+		    text = font.render(endGameMessage, True, (255,255,255))
+		    textrect = text.get_rect(centery =600, centerx = 800)
+	    else:
+		    font = pygame.font.Font("data/Deutsch.ttf", 70)
+		    #font = pygame.font.Font(None, 45)
+		    text = font.render(endGameMessage, True, (255,255,255))
+		    text = pygame.transform.rotate(text, 270)
+		    textrect = text.get_rect(centery =240, centerx = 350)  
+	    
             view.screen.blit(text,textrect)
 
         # ======================================================================
