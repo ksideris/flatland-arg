@@ -1,16 +1,16 @@
 import cv , liblo, sys ,random,math,time
 
 ESC_KEY = 27
-USE_CAM =True
+USE_CAM =False
 RECORDINGS_FOLDER = '/home/costas/flatland-arg/trackingTest/'
-VIDEO_FILE = RECORDINGS_FOLDER+'edaTest.avi'
+VIDEO_FILE = RECORDINGS_FOLDER+'costas.avi'
 THRESHOLD_VALUE = 30
 COLOR_THRESHOLD_VALUE = 60
 EROSION_ROUNDS = 1
 DILATION_ROUNDS = 1
 GAUSSIAN_SIZE =3
 PAIR_RANGE =60
-MATCHING_THRESHOLD = 120
+MATCHING_THRESHOLD = 500
 HISTORY_FRAMES=3
 SMOOTHING_WEIGHT = 0.1 # between 0 and 1
 DEBUG = False
@@ -33,6 +33,7 @@ class ColorBlob:
 	size	=0
 	blobid	=0
 	histogram =[]
+	dist =[]
 	matched= False
 	
 		
@@ -109,8 +110,8 @@ def ResetPlayers(Players):
 
 def WeightedVectorEucl(v1,v2,weight):
 	return math.sqrt(\
-			weight/2.0* pow(v1[0]-v2[0],2) + weight/2.0* pow(v1[2]-v2[2],2)+\
-			1/2.0* pow(v1[1]-v2[1],2) +1/2.0* pow(v1[3]-v2[3],2) 	)	
+			 pow(v1[0]-v2[0],2) + pow(v1[2]-v2[2],2)+\
+			 10*pow(v1[1]-v2[1],2) + 10*pow(v1[3]-v2[3],2) 	)	
 
 def InitializeClusters(Clusters):
 	print Clusters
@@ -149,7 +150,7 @@ def ResolveClusters(Players,Blobs,Clusters):
 		for neighbor in cluster[1]:
 			Signatures.append(((cluster[0],neighbor),Blobs[cluster[0]].color+Blobs[neighbor].color))
 			
-	
+	'''
 	for player in Players:	
 		if(not player.updated):
 			minIdx=-1
@@ -167,6 +168,32 @@ def ResolveClusters(Players,Blobs,Clusters):
 				player.updated=True
 				player.PushX( (Blobs[Signatures[minIdx][0][0]].x + Blobs[Signatures[minIdx][0][1]].x)/2.0 )
 				player.PushY( (Blobs[Signatures[minIdx][0][0]].y + Blobs[Signatures[minIdx][0][1]].y)/2.0 )
+	'''
+	distances =[]
+	for sidx,signature in enumerate(Signatures):
+		for pidx,player in enumerate(Players):	
+			color_delta= WeightedVectorEucl(player.signature,signature[1],1) 
+			newx =(Blobs[signature[0][0]].x + Blobs[signature[0][1]].x)/2.0
+			newy = (Blobs[signature[0][0]].y + Blobs[signature[0][1]].y)/2.0
+			pos_dist = math.sqrt(pow(player.x-newx,2.0)+pow(player.y-newy,2.0))
+			
+			distances.append((color_delta+pos_dist*10,sidx,pidx))
+		
+	distances = sorted(distances, key=lambda dist: dist[0])  
+	#print distances	
+	for dist in distances:
+		if(not Players[dist[2]].updated ):
+			
+			newx =(Blobs[Signatures[dist[1]][0][0]].x + Blobs[Signatures[dist[1]][0][1]].x)/2.0
+			newy = (Blobs[Signatures[dist[1]][0][0]].y + Blobs[Signatures[dist[1]][0][1]].y)/2.0
+			pos_dist = math.sqrt(pow(Players[dist[2]].x-newx,2.0)+pow(Players[dist[2]].y-newy,2.0))
+			#print '1',dist[0]-pos_dist*9
+			#print '2',dist[0]
+			if(dist[0]<MATCHING_THRESHOLD):#pos_dist< MATCHING_THRESHOLD):
+				
+				Players[dist[2]].updated=True
+				Players[dist[2]].PushX( newx  )
+				Players[dist[2]].PushY( newy )
 	
 	return Players
 	
