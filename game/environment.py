@@ -252,7 +252,7 @@ class Environment(pb.Cacheable, pb.RemoteCache):
                 building = b
                 break
         if not building:
-            if (self.rp.position - position) < 3:
+            if (self.rp.position - position) < 8:
                 building = self.rp
         player.updatePosition(position, building)
 
@@ -285,7 +285,11 @@ class Environment(pb.Cacheable, pb.RemoteCache):
             # TODO save the view to get images
             b.images = view.images.images
             if self.isVisible(b) or b.explosion:
-                b.paint(view, view.screenCoord(b.position), b.team == self.team)
+                if self.team is None:
+                    b.paint(view, view.screenCoord(b.position/2), b.team == self.team)
+                else:
+                    b.paint(view, view.screenCoord(b.position), b.team == self.team)
+                
         self.rp.paint(view, view.screenCoord(self.rp.position))
         for p in self.players.itervalues():
             if p.self:
@@ -298,7 +302,11 @@ class Environment(pb.Cacheable, pb.RemoteCache):
 		view.screen.blit(text,textrect)
             if p.self and p.building:
                 p.building.drawToolTip(view, "Build", p.team)
-            p.paint(view, view.screenCoord(p.position), self.team == p.team, self.isVisible(p))
+            if self.team is None:
+                p.paint(view, view.screenCoord(p.position/2), self.team == p.team, self.isVisible(p))
+            else:
+                p.paint(view, view.screenCoord(p.position), self.team == p.team, self.isVisible(p))
+            #p.paint(view, view.screenCoord(p.position), self.team == p.team, self.isVisible(p))
 
         # Draw the score:
         #TODO color appropriately
